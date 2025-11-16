@@ -729,25 +729,291 @@ Displays court information with booking functionality.
 />
 ```
 
+## Screens
+
+### MoreScreen (Settings)
+
+The MoreScreen (`paddle-app/src/screens/settings/MoreScreen.tsx`) provides comprehensive app settings and preferences.
+
+**Features:**
+- **5 Main Sections:** Account, Preferences, Activity, Support, Legal
+- **Theme Selection:** Light/Dark/Auto with Redux integration
+- **Language Selection:** French/English/Spanish with Redux integration
+- **Notifications Toggle:** Enable/disable push notifications
+- **Subscription Display:** Shows current tier (FREE/STANDARD/PREMIUM)
+- **User Profile:** Quick access to profile screen
+- **Logout:** Confirmation dialog before disconnecting
+
+**Structure:**
+
+```typescript
+// MoreScreen sections
+export const MoreScreen: React.FC = () => {
+  const theme = useTheme();
+  const dispatch = useAppDispatch();
+  const appSettings = useAppSelector((state) => state.app);
+  const user = useAppSelector((state) => state.auth.user);
+
+  // Sections:
+  // 1. Account - Profile, Subscription
+  // 2. Preferences - Notifications, Theme, Language
+  // 3. Activity - History, Favorites, Statistics
+  // 4. Support - Help/FAQ, Contact, Rate app
+  // 5. Legal - Terms, Privacy, About
+};
+```
+
+**Redux Actions:**
+
+- `setTheme(theme)` - Change app theme (light/dark/auto)
+- `setLanguage(lang)` - Change app language (fr/en/es)
+- `toggleNotifications()` - Enable/disable notifications
+- `logout()` - Log out user
+
+**Settings Items:**
+
+Each setting uses the `SettingsItem` component with:
+- Icon (Material Community Icons)
+- Title and optional subtitle
+- Optional right element (Switch, Chevron, Badge)
+- onPress handler for navigation or actions
+- testID for testing
+
+**Example Usage:**
+
+```typescript
+<SettingsItem
+  icon="theme-light-dark"
+  title="Thème"
+  subtitle={getThemeLabel()} // "Clair", "Sombre", "Automatique"
+  onPress={handleThemeChange}
+  testID="settings-theme"
+/>
+
+<SettingsItem
+  icon="bell"
+  title="Notifications"
+  subtitle="Activer les notifications push"
+  showChevron={false}
+  rightElement={
+    <Switch
+      value={appSettings.notificationsEnabled}
+      onValueChange={handleNotificationsToggle}
+      testID="settings-notifications-switch"
+    />
+  }
+  testID="settings-notifications"
+/>
+```
+
+**Navigation Integration:**
+
+- Integrates with React Navigation bottom tabs
+- Tab icon: `menu` (MaterialCommunityIcons)
+- Tab label: "Plus"
+- No header shown (headerShown: false)
+
+**Testing:**
+
+Comprehensive test suite with 25 tests covering:
+- All sections rendering correctly
+- Theme management (light/dark/auto) with Redux
+- Language management (fr/en/es) with Redux
+- Notifications toggle
+- Subscription tier display (FREE/STANDARD/PREMIUM)
+- Navigation to profile
+- Logout with confirmation
+
+All tests in `__tests__/screens/MoreScreen.test.tsx` pass (25/25).
+
 ## Common Patterns
+
+### Axios Configuration
+
+The app uses a configured axios instance with automatic token refresh and error handling:
+
+```typescript
+// paddle-app/src/api/axios.config.ts
+import axios from 'axios';
+import { store } from '@/store';
+import { logout, updateTokens } from '@/store/slices/authSlice';
+
+// Configured instance with interceptors
+const axiosInstance = axios.create({
+  baseURL: BASE_URL,
+  timeout: 30000,
+});
+
+// Request interceptor - adds auth token
+axiosInstance.interceptors.request.use((config) => {
+  const { accessToken } = store.getState().auth;
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return config;
+});
+
+// Response interceptor - handles token refresh
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    // Automatic token refresh on 401
+    // Request queuing during refresh
+    // Logout on refresh failure
+  }
+);
+```
+
+**Features:**
+- Automatic token injection in Authorization header
+- Token refresh on 401 with request queue
+- Error handling with typed helpers
+- Development logging
+- Network/timeout error detection
+
+**Helpers:**
+```typescript
+import { getErrorMessage, isNetworkError, isTimeoutError, isAuthError } from '@/api/axios.config';
+
+// Extract user-friendly error messages
+const message = getErrorMessage(error);
+
+// Check error types
+if (isNetworkError(error)) { /* No internet */ }
+if (isTimeoutError(error)) { /* Request timeout */ }
+if (isAuthError(error)) { /* Not authenticated */ }
+```
 
 ### API Service Pattern
 
+All API services follow a consistent pattern:
+
 ```typescript
 // paddle-app/src/api/services/auth.service.ts
-import axios from '@/api/axios.config';
+import axios from '../axios.config';
 
 export const authService = {
-  async login(email: string, password: string) {
-    const response = await axios.post('/auth/login', { email, password });
+  async register(data: RegisterData): Promise<AuthResponse> {
+    const response = await axios.post<AuthResponse>('/auth/register', data);
     return response.data;
   },
 
-  async register(userData: RegisterData) {
-    const response = await axios.post('/auth/register', userData);
+  async login(data: LoginData): Promise<AuthResponse> {
+    const response = await axios.post<AuthResponse>('/auth/login', data);
+    return response.data;
+  },
+
+  async logout(): Promise<void> {
+    await axios.post('/auth/logout');
+  },
+
+  async refreshToken(data: RefreshTokenData): Promise<TokenResponse> {
+    const response = await axios.post<TokenResponse>('/auth/refresh', data);
     return response.data;
   },
 };
+```
+
+**Available Services:**
+
+1. **authService** (`auth.service.ts`):
+   - `register(data)` - Create new account
+   - `login(data)` - Authenticate user
+   - `logout()` - End session
+   - `refreshToken(data)` - Refresh access token
+   - `forgotPassword(data)` - Request password reset
+   - `resetPassword(data)` - Reset password with token
+   - `verifyEmail(token)` - Verify email address
+   - `resendVerificationEmail()` - Resend verification email
+
+2. **userService** (`user.service.ts`):
+   - `getMe()` - Get current user profile
+   - `getUserById(id)` - Get user by ID
+   - `updateProfile(data)` - Update profile
+   - `uploadAvatar(formData)` - Upload profile picture
+   - `deleteAvatar()` - Remove profile picture
+   - `getMyStatistics()` - Get user stats
+   - `getUserStatistics(id)` - Get user stats by ID
+   - `searchPlayers(params)` - Search players with filters
+   - `addFavorite(id)` / `removeFavorite(id)` - Manage favorites
+   - `getFavorites()` - List favorite players
+   - `blockUser(id)` / `unblockUser(id)` - Manage blocked users
+   - `getBlockedUsers()` - List blocked users
+
+3. **matchService** (`match.service.ts`):
+   - `getMatches(params)` - Search matches with filters
+   - `getMatchById(id)` - Get match details
+   - `createMatch(data)` - Create new match
+   - `updateMatch(id, data)` - Update match
+   - `deleteMatch(id)` - Delete match
+   - `joinMatch(id)` - Join a match
+   - `leaveMatch(id)` - Leave a match
+   - `invitePlayer(matchId, userId)` - Invite player to match
+   - `respondToInvitation(matchId, response)` - Accept/decline invitation
+   - `getMyMatches(params)` - Get my participated matches
+   - `getMyOrganizedMatches(params)` - Get matches I organized
+   - `updateScore(id, score)` - Update match score
+   - `completeMatch(id)` - Mark match as completed
+   - `cancelMatch(id, reason)` - Cancel match
+
+4. **courtService** (`court.service.ts`):
+   - `searchClubs(params)` - Search clubs/venues
+   - `getClubById(id)` - Get club details
+   - `getClubCourts(id)` - Get club's courts
+   - `getCourtById(id)` - Get court details
+   - `getCourtAvailability(id, date)` - Check availability
+   - `createBooking(data)` - Book a court
+   - `getMyBookings(params)` - List my bookings
+   - `getBookingById(id)` - Get booking details
+   - `updateBooking(id, data)` - Modify booking
+   - `cancelBooking(id)` - Cancel booking
+   - `getClubReviews(id, params)` - Get club reviews
+   - `addReview(id, data)` - Add review
+   - `updateReview(id, data)` / `deleteReview(id)` - Manage reviews
+   - `addFavoriteClub(id)` / `removeFavoriteClub(id)` - Manage favorite clubs
+   - `getFavoriteClubs()` - List favorite clubs
+
+**Usage Example:**
+
+```typescript
+import { authService, userService, matchService } from '@/api/services';
+
+// Login
+try {
+  const response = await authService.login({
+    email: 'user@example.com',
+    password: 'password123',
+  });
+  dispatch(loginSuccess({
+    user: response.user,
+    accessToken: response.tokens.accessToken,
+    refreshToken: response.tokens.refreshToken,
+  }));
+} catch (error) {
+  const message = getErrorMessage(error);
+  setError(message);
+}
+
+// Search players
+const result = await userService.searchPlayers({
+  skillLevel: 'INTERMEDIATE',
+  city: 'Paris',
+  radius: 10,
+  page: 1,
+  limit: 20,
+});
+
+// Create match
+const match = await matchService.createMatch({
+  title: 'Match amical',
+  type: 'FRIENDLY',
+  format: 'DOUBLES',
+  skillLevel: 'INTERMEDIATE',
+  dateTime: '2025-11-17T14:00:00Z',
+  duration: 90,
+  courtId: 'court-123',
+  maxPlayers: 4,
+});
 ```
 
 ### Redux Slice Pattern
@@ -849,6 +1115,64 @@ describe('AuthService', () => {
 ```
 
 ### Mobile Tests
+
+**Jest Configuration:**
+
+The app uses Jest with React Native preset configured in `jest.config.js`:
+
+```javascript
+module.exports = {
+  preset: 'react-native',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  transformIgnorePatterns: [
+    'node_modules/(?!(react-native|@react-native|@react-navigation|react-native-vector-icons)/)',
+  ],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1', // Support for @ imports
+  },
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/__tests__/**',
+    '!src/types/**',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
+    },
+  },
+};
+```
+
+**Setup File (`jest.setup.js`):**
+
+Mocks for native modules are configured in `jest.setup.js`:
+- React Native core modules
+- AsyncStorage
+- Vector Icons
+- Safe Area Context
+- React Native Reanimated
+- React Navigation
+
+**Shared Theme Mock:**
+
+A comprehensive theme mock is available in `__tests__/helpers/theme-mock.ts` for consistent testing:
+
+```typescript
+import { mockTheme } from '../helpers/theme-mock';
+
+jest.mock('@/hooks/useTheme', () => ({
+  useTheme: () => mockTheme,
+}));
+```
+
+The mock includes all theme properties: colors, spacing, borderRadius, dimensions, fontFamily, fontSize, shadows, etc.
+
+**Running Tests:**
 
 ```bash
 cd paddle-app
@@ -1157,11 +1481,17 @@ npx prisma migrate dev
   - **7 Common UI Components:** Button, Input, Card, Avatar, Loading, ErrorMessage, Badge
   - **3 Feature Components:** PlayerCard, MatchCard, CourtCard
   - **Authentication Screens:** Onboarding, Login, SignUp, ForgotPassword
-  - **Main Screens:** Home, Search, Profile, Matches
-  - Comprehensive test suite (10 component tests + 3 feature tests)
+  - **Main Screens:** Home, Search, Profile, Matches, More/Settings
+  - Comprehensive test suite (10 component tests + 3 feature tests + 1 screen test)
   - testID props for component testability
   - Matches screen with tabs (upcoming, organized, past)
   - Feature components with default and compact variants
+  - **MoreScreen:** Complete settings screen with 5 sections (Account, Preferences, Activity, Support, Legal)
+  - **Jest Configuration:** React Native preset with test infrastructure
+  - **Axios Configuration:** Instance with automatic token refresh and error handling
+  - **API Services:** 4 complete services (auth, user, match, court) with 60+ endpoints
+  - Shared theme mock for consistent testing
+  - 85/110 tests passing (all MoreScreen tests passing)
 
 ---
 
