@@ -609,6 +609,126 @@ When adding new common components:
 5. Document in this CLAUDE.md file
 6. Follow existing naming conventions
 
+## Feature Components Library
+
+Feature components are domain-specific components located in `paddle-app/src/components/features/`:
+
+```typescript
+import { PlayerCard, MatchCard, CourtCard } from '@/components/features';
+```
+
+### Available Feature Components
+
+#### 1. PlayerCard (`PlayerCard.tsx`)
+Displays player information with stats and actions.
+
+**Props:**
+- `player`: PlayerCardData - Player data
+- `onPress`: () => void - Card press handler
+- `onMessagePress`: () => void - Message button handler
+- `onInvitePress`: () => void - Invite button handler
+- `variant`: 'default' | 'compact' - Display variant
+
+**PlayerCardData:**
+- `id`, `firstName`, `lastName`, `username`
+- `skillLevel`: Skill level enum
+- `distance`, `matchesPlayed`, `winRate` (optional)
+- `isOnline`: boolean (optional)
+
+**Example:**
+```typescript
+<PlayerCard
+  player={{
+    id: '1',
+    firstName: 'Jean',
+    lastName: 'Dupont',
+    username: 'jeandupont',
+    skillLevel: 'INTERMEDIATE',
+    distance: '2.3 km',
+    matchesPlayed: 45,
+    winRate: 62,
+  }}
+  onPress={() => navigate('PlayerProfile')}
+  onMessagePress={handleMessage}
+  onInvitePress={handleInvite}
+/>
+```
+
+#### 2. MatchCard (`MatchCard.tsx`)
+Displays match information with join/leave functionality.
+
+**Props:**
+- `match`: MatchCardData - Match data
+- `onPress`: () => void - Card press handler
+- `onJoinPress`: () => void - Join button handler
+- `onLeavePress`: () => void - Leave button handler
+- `isJoined`: boolean - User participation status
+- `variant`: 'default' | 'compact' - Display variant
+
+**MatchCardData:**
+- `id`, `title`, `type`, `format`, `skillLevel`
+- `date`, `time`, `court`, `organizer`
+- `participants`: Array of players
+- `maxPlayers`: number
+- `distance`, `price` (optional)
+
+**Example:**
+```typescript
+<MatchCard
+  match={{
+    id: '1',
+    title: 'Match amical',
+    type: 'FRIENDLY',
+    format: 'DOUBLES',
+    skillLevel: 'INTERMEDIATE',
+    date: '2025-11-17',
+    time: '14:00',
+    court: 'Padel Center',
+    organizer: 'Jean Dupont',
+    participants: [/* ... */],
+    maxPlayers: 4,
+  }}
+  onPress={() => navigate('MatchDetails')}
+  onJoinPress={handleJoin}
+  isJoined={false}
+/>
+```
+
+#### 3. CourtCard (`CourtCard.tsx`)
+Displays court information with booking functionality.
+
+**Props:**
+- `court`: CourtCardData - Court data
+- `onPress`: () => void - Card press handler
+- `onBookPress`: () => void - Book button handler
+- `variant`: 'default' | 'compact' - Display variant
+
+**CourtCardData:**
+- `id`, `name`, `clubName`, `type`, `surface`
+- `pricePerHour`: number
+- `rating`, `reviewsCount` (optional)
+- `courtsAvailable`, `totalCourts` (optional)
+- `hasLighting`, `hasParking`, `hasShower` (optional)
+
+**Example:**
+```typescript
+<CourtCard
+  court={{
+    id: '1',
+    name: 'Padel Center Paris',
+    clubName: 'Club Sportif',
+    type: 'INDOOR',
+    surface: 'ARTIFICIAL_GRASS',
+    pricePerHour: 25,
+    rating: 4.5,
+    courtsAvailable: 3,
+    totalCourts: 6,
+  }}
+  onPress={() => navigate('CourtDetails')}
+  onBookPress={handleBook}
+/>
+```
+
 ## Common Patterns
 
 ### API Service Pattern
@@ -810,6 +930,39 @@ All common components have comprehensive test coverage located in `__tests__/com
 - Calls onRetry callback
 - Fullscreen mode
 
+#### Feature Component Tests
+
+All feature components have comprehensive test coverage located in `__tests__/features/`:
+
+**PlayerCard.test.tsx:**
+- Renders correctly with player data
+- Displays player stats (distance, matches, win rate)
+- Calls onPress when card is pressed
+- Renders message and invite buttons
+- Compact variant support
+- Handles missing optional data gracefully
+
+**MatchCard.test.tsx:**
+- Renders correctly with match data
+- Displays match type labels (Amical, Classé, etc.)
+- Shows participant count correctly
+- Join/Leave button functionality
+- Disables join button when match is full
+- Displays price when provided
+- Compact variant support
+- Different match types rendering
+
+**CourtCard.test.tsx:**
+- Renders correctly with court data
+- Displays rating and reviews
+- Shows distance and type correctly
+- Surface type labels (Gazon synthétique, Béton, Verre)
+- Availability status (Disponible/Complet)
+- Book button functionality
+- Disables book button when unavailable
+- Compact variant support
+- Indoor/Outdoor type display
+
 #### Test Best Practices
 
 1. **Mock Theme Hook:**
@@ -1001,11 +1154,14 @@ npx prisma migrate dev
   - Design system
   - Redux store configuration
   - Navigation structure
-  - 7 common UI components (Button, Input, Card, Avatar, Loading, ErrorMessage, Badge)
-  - Authentication screens (Onboarding, Login, SignUp, ForgotPassword)
-  - Main screens (Home, Search, Profile)
-  - Comprehensive test suite for all common components
+  - **7 Common UI Components:** Button, Input, Card, Avatar, Loading, ErrorMessage, Badge
+  - **3 Feature Components:** PlayerCard, MatchCard, CourtCard
+  - **Authentication Screens:** Onboarding, Login, SignUp, ForgotPassword
+  - **Main Screens:** Home, Search, Profile, Matches
+  - Comprehensive test suite (10 component tests + 3 feature tests)
   - testID props for component testability
+  - Matches screen with tabs (upcoming, organized, past)
+  - Feature components with default and compact variants
 
 ---
 
