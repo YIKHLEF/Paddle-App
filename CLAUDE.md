@@ -7,10 +7,72 @@ This document provides comprehensive guidance for AI assistants working on the P
 **Project Name:** Paddle-App
 **Purpose:** Mobile application for paddle/padel players - Find partners, book courts, track performance
 **Type:** React Native Mobile App (iOS/Android) + Node.js Backend API
-**Status:** ✅ Development - Core architecture implemented
-**Version:** 1.0.0
-**Tech Stack:** React Native 0.74, TypeScript, Node.js 20, PostgreSQL, Prisma, Redux Toolkit
+**Status:** ✅ Development - MVP in progress (Sprint 1 Complete!)
+**Version:** 1.3.0
+**Tech Stack:** React Native 0.74, TypeScript, Node.js 20, PostgreSQL, Prisma, Redux Toolkit, Stripe, Firebase
 **Business Model:** Freemium with subscriptions (Standard: 9.99€/month, Premium: 14.99€/month)
+
+## 🆕 Recent Updates (v1.3.0 - Sprint 1 Complete!)
+
+### ✅ New Features Implemented:
+
+**1. Social Authentication (Google/Apple/Facebook)** ✅
+- ✅ Backend OAuth service (`paddle-api/src/services/oauth.service.ts`)
+- ✅ OAuth routes (`paddle-api/src/routes/oauth.routes.ts`)
+- ✅ Frontend SocialLoginButtons component
+- ✅ Social auth configuration (`paddle-app/src/config/socialAuth.config.ts`)
+- ✅ Updated auth service with social login methods
+
+**2. Biometric Authentication (Face ID / Touch ID)** ✅
+- ✅ Biometric service (`paddle-app/src/services/biometric.service.ts`)
+- ✅ useBiometric hook (`paddle-app/src/hooks/useBiometric.ts`)
+- ✅ BiometricSetting component for settings screen
+- ✅ Support for iOS Face ID, Touch ID and Android Fingerprint
+
+**3. Email Verification System** ✅
+- ✅ Email service with templates (`paddle-api/src/services/email.service.ts`)
+- ✅ Verification email, password reset, welcome email, booking confirmation
+- ✅ Nodemailer integration for SMTP
+
+**4. Subscription & In-App Purchase Module** ✅
+- ✅ Subscription service (`paddle-app/src/services/subscription.service.ts`)
+- ✅ useSubscription hook (`paddle-app/src/hooks/useSubscription.ts`)
+- ✅ Support for iOS (StoreKit) and Android (Google Play Billing)
+- ✅ Trial period management
+- ✅ Purchase restoration
+- ✅ Subscription status tracking
+
+**5. Stripe Payment Integration** ✅
+- ✅ Backend Stripe service with full subscription lifecycle (`paddle-api/src/services/stripe.service.ts`)
+- ✅ Subscription routes with 8 endpoints (`paddle-api/src/routes/subscription.routes.ts`)
+- ✅ Frontend Stripe service with Payment Sheet (`paddle-app/src/services/stripe.service.ts`)
+- ✅ Beautiful Subscription Screen with plan comparison (`paddle-app/src/screens/subscription/SubscriptionScreen.tsx`)
+- ✅ Webhook handling for automated sync
+- ✅ Customer Portal for self-service
+- ✅ 14-day free trial support
+- ✅ Secure payment processing (PCI compliant)
+
+**6. Firebase Push Notifications** ✅ NEW
+- ✅ Backend notification service with Firebase Admin SDK (`paddle-api/src/services/notification.service.ts`)
+- ✅ Notification routes with 5 endpoints (`paddle-api/src/routes/notification.routes.ts`)
+- ✅ Frontend FCM service with multi-platform support (`paddle-app/src/services/notification.service.ts`)
+- ✅ useNotifications hook for easy integration (`paddle-app/src/hooks/useNotifications.ts`)
+- ✅ Device token management with automatic cleanup
+- ✅ Notification templates for common events (messages, matches, bookings, payments)
+- ✅ Android notification channels (default, matches, messages, bookings)
+- ✅ Badge count management (iOS)
+- ✅ Background and foreground notification handling
+- ✅ Deep linking on notification tap
+
+**Progress:** Sprint 1 features (6/6 completed) ✅ COMPLETE!
+- ✅ Social authentication (100%)
+- ✅ Biometric authentication (100%)
+- ✅ Email verification (100%)
+- ✅ Subscription module (100%)
+- ✅ Stripe integration (100%)
+- ✅ Firebase Push Notifications (100%)
+
+**Completion:** ~55-60% of MVP completed (Sprint 1 fully complete!)
 
 ## Project Structure
 
@@ -1470,7 +1532,698 @@ npx prisma migrate dev
 - [ ] Comments for complex logic
 - [ ] Tests written and passing
 
+## New Modules & Services (v1.1.0)
+
+### Social Authentication Module
+
+**Backend (`paddle-api/src/services/oauth.service.ts`):**
+- Google OAuth authentication with token verification
+- Apple Sign-In with identity token validation
+- Facebook Login with Graph API integration
+- Automatic user account linking with existing emails
+- Unique username generation
+- JWT token generation for authenticated sessions
+
+**Routes (`paddle-api/src/routes/oauth.routes.ts`):**
+- `POST /api/oauth/google` - Authenticate with Google ID token
+- `POST /api/oauth/apple` - Authenticate with Apple identity token
+- `POST /api/oauth/facebook` - Authenticate with Facebook access token
+
+**Frontend:**
+- **SocialLoginButtons Component** (`paddle-app/src/components/auth/SocialLoginButtons.tsx`)
+  - Pre-configured buttons for Google, Apple (iOS only), and Facebook
+  - Loading states for each provider
+  - Error handling with user-friendly messages
+  - Redux integration for storing auth state
+
+- **Configuration** (`paddle-app/src/config/socialAuth.config.ts`)
+  - Google Sign-In configuration
+  - Facebook SDK initialization
+  - Auto-initialization helper
+
+**Updated Services:**
+- `authService.loginWithGoogle(idToken)` - Call backend OAuth endpoint
+- `authService.loginWithApple(identityToken, user?)` - Apple authentication
+- `authService.loginWithFacebook(accessToken)` - Facebook authentication
+
+**Usage Example:**
+```typescript
+import { SocialLoginButtons } from '@/components/auth/SocialLoginButtons';
+
+<SocialLoginButtons
+  onSuccess={() => navigation.navigate('Home')}
+  onError={(error) => Alert.alert('Erreur', error)}
+/>
+```
+
+---
+
+### Biometric Authentication Module
+
+**Service (`paddle-app/src/services/biometric.service.ts`):**
+- Face ID support (iOS)
+- Touch ID support (iOS)
+- Fingerprint authentication (Android)
+- Availability checking per device
+- Enable/disable biometric preference storage
+- Fallback to password authentication
+
+**Hook (`paddle-app/src/hooks/useBiometric.ts`):**
+Simplified React hook for component usage:
+```typescript
+const {
+  isAvailable,      // Boolean: biometry available on device
+  isEnabled,        // Boolean: user has enabled it
+  biometryType,     // 'FaceID' | 'TouchID' | 'Biometrics'
+  authenticate,     // Function: prompt biometric auth
+  enable,           // Function: enable biometric login
+  disable,          // Function: disable biometric login
+  getBiometricName, // Function: get localized name
+} = useBiometric();
+```
+
+**Component (`paddle-app/src/components/settings/BiometricSetting.tsx`):**
+- Settings toggle for enabling/disabling biometric auth
+- Displays appropriate icon (face-recognition or fingerprint)
+- Confirmation dialogs for enable/disable actions
+- Auto-hides if biometry not available
+
+**Usage Example:**
+```typescript
+import { useBiometric } from '@/hooks/useBiometric';
+
+const LoginScreen = () => {
+  const { isEnabled, authenticate } = useBiometric();
+
+  const handleBiometricLogin = async () => {
+    if (isEnabled) {
+      const success = await authenticate('Connectez-vous à Paddle App');
+      if (success) {
+        // Proceed with login
+      }
+    }
+  };
+};
+```
+
+---
+
+### Email Service Module
+
+**Backend Service (`paddle-api/src/services/email.service.ts`):**
+Complete email transactional system with beautiful HTML templates:
+
+**Methods:**
+- `sendEmail(options)` - Generic email sender
+- `sendVerificationEmail(userId, email)` - Email verification with token
+- `sendPasswordResetEmail(email, resetToken)` - Password reset link
+- `sendWelcomeEmail(email, firstName)` - Welcome email after activation
+- `sendBookingConfirmation(email, bookingDetails)` - Booking confirmation
+
+**Features:**
+- HTML email templates with modern design
+- Responsive layout for mobile/desktop
+- Brand colors (#0066FF primary, #00D084 secondary)
+- Nodemailer integration for SMTP
+- Automatic text version generation
+- Professional styling with gradient headers
+
+**Email Templates Include:**
+- ✅ Verification email with expiring link (24h)
+- ✅ Password reset with security warning (1h expiry)
+- ✅ Welcome email with app features overview
+- ✅ Booking confirmation with all details
+- Future: Match reminders, subscription renewals, etc.
+
+**Configuration Required:**
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+FRONTEND_URL=https://paddle-app.com
+```
+
+**Usage Example:**
+```typescript
+import { EmailService } from '../services/email.service';
+
+// Send verification email
+await EmailService.sendVerificationEmail(user.id, user.email);
+
+// Send booking confirmation
+await EmailService.sendBookingConfirmation(user.email, {
+  courtName: 'Padel Center Paris',
+  date: '17 novembre 2025',
+  time: '14:00',
+  duration: 90,
+  price: 25,
+});
+```
+
+---
+
+### Subscription & In-App Purchase Module
+
+**Service (`paddle-app/src/services/subscription.service.ts`):**
+Complete IAP management for iOS and Android:
+
+**Features:**
+- StoreKit 2 (iOS) and Google Play Billing 6 (Android) integration
+- Subscription products management
+- Purchase flow handling
+- Receipt verification with backend
+- Purchase restoration (important for iOS App Review)
+- Subscription cancellation (redirects to store settings)
+- Trial period support
+- Auto-renewal management
+
+**Product SKUs:**
+```typescript
+SUBSCRIPTION_SKUS = {
+  STANDARD_MONTHLY: 'com.paddleapp.standard.monthly',
+  PREMIUM_MONTHLY: 'com.paddleapp.premium.monthly',
+  PREMIUM_ANNUAL: 'com.paddleapp.premium.annual',
+}
+```
+
+**Methods:**
+- `initialize()` - Connect to store and setup listeners
+- `getProducts()` - Fetch available subscriptions
+- `purchaseSubscription(productId)` - Initiate purchase
+- `restorePurchases()` - Restore previous purchases
+- `cancelSubscription()` - Guide user to cancel
+- `checkSubscriptionStatus()` - Get current subscription state
+
+**Hook (`paddle-app/src/hooks/useSubscription.ts`):**
+React hook for easy subscription management:
+
+```typescript
+const {
+  products,         // Available subscription products
+  status,           // Current subscription status
+  tier,             // 'FREE' | 'STANDARD' | 'PREMIUM'
+  isSubscribed,     // Boolean
+  expiryDate,       // Date | null
+  isTrialActive,    // Boolean
+  loading,          // Initial load state
+  purchasing,       // Purchase in progress
+  subscribe,        // (productId) => Promise<boolean>
+  restore,          // () => Promise<boolean>
+  cancel,           // () => Promise<void>
+  startTrial,       // (tier) => Promise<boolean>
+  canUpgrade,       // () => boolean
+  getProductPrice,  // (productId) => string | null
+} = useSubscription();
+```
+
+**Usage Example:**
+```typescript
+import { useSubscription } from '@/hooks/useSubscription';
+import { SUBSCRIPTION_SKUS } from '@/services/subscription.service';
+
+const SubscriptionScreen = () => {
+  const { products, subscribe, loading, tier } = useSubscription();
+
+  const handleSubscribe = async () => {
+    const success = await subscribe(SUBSCRIPTION_SKUS.PREMIUM_MONTHLY);
+    if (success) {
+      Alert.alert('Succès !', 'Vous êtes maintenant Premium !');
+    }
+  };
+
+  return (
+    <View>
+      {products.map(product => (
+        <Button
+          key={product.productId}
+          title={`${product.title} - ${product.localizedPrice}`}
+          onPress={() => subscribe(product.productId)}
+        />
+      ))}
+    </View>
+  );
+};
+```
+
+**Backend Integration Required:**
+- `POST /api/subscriptions/verify-purchase` - Verify receipt with Apple/Google
+- `POST /api/subscriptions/restore` - Restore previous subscriptions
+- `GET /api/subscriptions/status` - Get current subscription status
+- Webhooks for subscription events (renewal, cancellation, etc.)
+
+---
+
+### Stripe Payment Integration Module
+
+**Backend Service (`paddle-api/src/services/stripe.service.ts`):**
+Complete Stripe integration for subscription management:
+
+**Features:**
+- Stripe API v2023-10-16 integration
+- Customer creation and management
+- Subscription lifecycle (create, update, cancel)
+- Payment method handling
+- Checkout Session creation
+- Customer Portal for self-service
+- Webhook handling for automated sync
+- Trial period support (14 days)
+- Prorated upgrades/downgrades
+
+**Core Methods:**
+- `createCustomer(userId, email, name)` - Create Stripe customer
+- `createSubscription(data)` - Create new subscription with trial
+- `cancelSubscription(subscriptionId, immediate)` - Cancel subscription
+- `updateSubscription(subscriptionId, newPriceId)` - Upgrade/downgrade
+- `createCheckoutSession(userId, priceId, urls)` - Create Checkout Session
+- `createCustomerPortal(customerId, returnUrl)` - Self-service portal
+- `handleWebhook(payload, signature)` - Process Stripe webhooks
+- `getPrices()` - Fetch available subscription prices
+
+**Webhook Events Handled:**
+- `customer.subscription.created` - New subscription
+- `customer.subscription.updated` - Subscription changed
+- `customer.subscription.deleted` - Subscription cancelled
+- `invoice.paid` - Payment successful
+- `invoice.payment_failed` - Payment failed
+
+**Routes (`paddle-api/src/routes/subscription.routes.ts`):**
+
+All routes require authentication (except webhook):
+
+```typescript
+POST   /api/subscriptions/create              // Create subscription
+POST   /api/subscriptions/cancel              // Cancel subscription
+PUT    /api/subscriptions/update              // Update subscription
+GET    /api/subscriptions/status              // Get user subscription status
+POST   /api/subscriptions/checkout-session    // Create Checkout Session
+POST   /api/subscriptions/portal              // Open Customer Portal
+GET    /api/subscriptions/prices              // Get available prices
+POST   /api/subscriptions/webhook             // Stripe webhook (no auth)
+```
+
+**Frontend Service (`paddle-app/src/services/stripe.service.ts`):**
+React Native Stripe integration using `@stripe/stripe-react-native`:
+
+**Methods:**
+- `initializePaymentSheet(priceId, trialDays)` - Init payment UI
+- `presentPaymentSheet()` - Show payment sheet to user
+- `subscribe(priceId, trialDays)` - Complete subscription flow
+- `getPrices()` - Fetch subscription prices
+- `cancelSubscription(subscriptionId, immediate)` - Cancel subscription
+- `createCheckoutSession(priceId, urls)` - Web checkout (if needed)
+- `openCustomerPortal(returnUrl)` - Self-service management
+- `updateSubscription(subscriptionId, newPriceId)` - Change plan
+
+**Subscription Screen (`paddle-app/src/screens/subscription/SubscriptionScreen.tsx`):**
+Beautiful subscription selection UI with:
+
+**Features:**
+- 2 subscription plans (Standard 9.99€, Premium 14.99€)
+- Visual plan comparison with feature lists
+- "Popular" badge for recommended plan
+- 14-day free trial prominently displayed
+- Stripe Payment Sheet integration
+- Loading states during payment
+- Current plan indication
+- Responsive design with brand colors
+- Success/error handling with alerts
+
+**Plan Features Displayed:**
+
+Standard (9.99€/mois):
+- ✅ Réservation de terrains
+- ✅ Recherche illimitée
+- ✅ Statistiques avancées
+- ✅ Organisation de matchs
+- ✅ Chat
+- ✅ Sans publicité
+
+Premium (14.99€/mois):
+- ✅ Everything in Standard
+- ✅ Analyse vidéo
+- ✅ Coaching IA
+- ✅ Accès prioritaire tournois
+- ✅ Badge Premium
+- ✅ Stats comparatives
+- ✅ Calendrier intelligent
+- ✅ Matching IA
+
+**Configuration Required:**
+
+Backend `.env`:
+```env
+STRIPE_SECRET_KEY=sk_test_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+STRIPE_STANDARD_MONTHLY_PRICE_ID=price_xxx
+STRIPE_PREMIUM_MONTHLY_PRICE_ID=price_xxx
+STRIPE_PREMIUM_ANNUAL_PRICE_ID=price_xxx
+```
+
+Frontend `.env`:
+```env
+STRIPE_PUBLISHABLE_KEY=pk_test_xxx
+STRIPE_STANDARD_MONTHLY_PRICE_ID=price_xxx
+STRIPE_PREMIUM_MONTHLY_PRICE_ID=price_xxx
+```
+
+**Setup Instructions:**
+
+1. **Create Stripe Account** and get API keys
+2. **Create Products** in Stripe Dashboard:
+   - Standard Monthly (9.99€)
+   - Premium Monthly (14.99€)
+   - Premium Annual (99.99€)
+3. **Copy Price IDs** to environment variables
+4. **Configure Webhooks** in Stripe Dashboard:
+   - Endpoint: `https://your-api.com/api/subscriptions/webhook`
+   - Events: All subscription and invoice events
+5. **Add Stripe field to Prisma User model:**
+   ```prisma
+   model User {
+     // ... existing fields
+     stripeCustomerId  String?  @unique
+   }
+   ```
+6. **Install dependencies:**
+   ```bash
+   # Backend
+   npm install stripe
+
+   # Frontend
+   npm install @stripe/stripe-react-native
+   ```
+
+**Usage Example:**
+
+```typescript
+import { SubscriptionScreen } from '@/screens/subscription/SubscriptionScreen';
+import { StripeProvider } from '@stripe/stripe-react-native';
+
+// In your navigation
+<Stack.Screen
+  name="Subscription"
+  component={SubscriptionScreen}
+/>
+
+// User clicks subscribe → Payment Sheet appears → Trial starts
+// After 14 days → Stripe auto-charges → Webhook updates DB
+```
+
+**Payment Flow:**
+1. User selects plan
+2. App calls `subscribe(priceId, 14)`
+3. Backend creates subscription with trial
+4. Frontend shows Stripe Payment Sheet
+5. User enters card (saved for future charges)
+6. Trial starts immediately (no charge)
+7. After 14 days, Stripe auto-charges
+8. Webhook updates user tier in database
+9. App refreshes subscription status
+
+**Security:**
+- Card info never touches our servers (PCI compliance)
+- Stripe handles all payment processing
+- Webhook signatures verified
+- Customer IDs linked to user IDs
+- All routes protected (except webhook)
+
+---
+
+### Firebase Push Notifications Module
+
+**Backend Service (`paddle-api/src/services/notification.service.ts`):**
+Complete Firebase Cloud Messaging (FCM) integration for push notifications:
+
+**Features:**
+- Firebase Admin SDK integration
+- Device token management
+- Multi-platform support (iOS/Android)
+- Targeted notifications (single user or bulk)
+- Notification templates for common events
+- Automatic token cleanup (invalid tokens)
+- Custom notification data payloads
+- Badge count management
+- Priority and TTL settings
+
+**Core Methods:**
+- `initializeFirebase()` - Initialize Firebase Admin SDK
+- `registerDeviceToken(userId, token, platform)` - Register device for notifications
+- `unregisterDeviceToken(token)` - Remove device token
+- `sendToUser(userId, notification, options)` - Send to specific user
+- `sendToUsers(userIds, notification, options)` - Bulk send to multiple users
+- `sendNewMessageNotification(recipientId, senderName, preview)` - Chat notification
+- `sendMatchInvitationNotification(recipientId, matchTitle, organizer, matchId)` - Match invite
+- `sendMatchReminderNotification(userId, matchTitle, time, matchId)` - Match reminder
+- `sendBookingConfirmationNotification(userId, courtName, dateTime, bookingId)` - Booking confirmed
+- `sendBookingCancellationNotification(userId, courtName, dateTime)` - Booking cancelled
+- `sendTrialEndingNotification(userId, daysRemaining)` - Trial ending soon
+- `sendPaymentSuccessNotification(userId, amount, planName)` - Payment successful
+- `sendPaymentFailureNotification(userId, planName)` - Payment failed
+
+**Routes (`paddle-api/src/routes/notification.routes.ts`):**
+
+All routes require authentication:
+
+```typescript
+POST   /api/notifications/register-token     // Register device token
+POST   /api/notifications/unregister-token   // Remove device token
+POST   /api/notifications/send               // Send custom notification
+POST   /api/notifications/send-bulk          // Send to multiple users
+POST   /api/notifications/test               // Send test notification
+```
+
+**Prisma Schema Updates:**
+
+Added `DeviceToken` model for token management:
+```prisma
+model DeviceToken {
+  id         String   @id @default(uuid())
+  userId     String
+  token      String   @unique
+  platform   Platform // ios or android
+  lastUsedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@map("device_tokens")
+}
+
+enum Platform {
+  ios
+  android
+}
+```
+
+**Frontend Service (`paddle-app/src/services/notification.service.ts`):**
+React Native FCM integration using `@react-native-firebase/messaging` and `@notifee/react-native`:
+
+**Methods:**
+- `initialize()` - Setup FCM, request permissions, register token
+- `requestPermission()` - Request notification permission (iOS/Android 13+)
+- `checkPermission()` - Check if permissions granted
+- `registerTokenOnBackend(token)` - Save token to backend
+- `createNotificationChannel()` - Setup Android notification channels
+- `setupListeners()` - Handle foreground/background/click events
+- `displayNotification(message)` - Show local notification
+- `handleNotificationClick(notification)` - Navigate on tap
+- `disable()` - Unregister and delete token
+- `sendTestNotification()` - Test notification delivery
+- `getBadgeCount()` - Get current badge count (iOS)
+- `setBadgeCount(count)` - Set badge count (iOS)
+- `clearAllNotifications()` - Clear all notifications
+
+**Hook (`paddle-app/src/hooks/useNotifications.ts`):**
+React hook for easy notification management in components:
+
+**Returns:**
+```typescript
+{
+  // State
+  isInitialized: boolean,        // Service initialized
+  hasPermission: boolean,         // Permission granted
+  notificationsEnabled: boolean,  // Redux enabled state
+  loading: boolean,               // Operation in progress
+  badgeCount: number,             // Current badge count
+
+  // Methods
+  checkPermission: () => Promise<boolean>,
+  requestPermission: () => Promise<boolean>,
+  enable: () => Promise<boolean>,
+  disable: () => Promise<boolean>,
+  toggle: () => Promise<boolean>,
+  sendTestNotification: () => Promise<boolean>,
+  updateBadgeCount: () => Promise<void>,
+  setNotificationBadge: (count: number) => Promise<void>,
+  clearAll: () => Promise<void>,
+}
+```
+
+**Usage Example:**
+
+```typescript
+import { useNotifications } from '@/hooks/useNotifications';
+
+function SettingsScreen() {
+  const {
+    notificationsEnabled,
+    hasPermission,
+    enable,
+    disable,
+    sendTestNotification,
+  } = useNotifications();
+
+  const handleToggle = async () => {
+    if (notificationsEnabled) {
+      await disable();
+    } else {
+      await enable();
+    }
+  };
+
+  const handleTest = async () => {
+    const success = await sendTestNotification();
+    if (success) {
+      Alert.alert('Success', 'Test notification sent!');
+    }
+  };
+
+  return (
+    <View>
+      <Switch value={notificationsEnabled} onValueChange={handleToggle} />
+      <Button title="Send Test" onPress={handleTest} />
+    </View>
+  );
+}
+```
+
+**Notification Channels (Android):**
+- **default**: General notifications
+- **matches**: Match invitations and reminders
+- **messages**: Chat messages
+- **bookings**: Booking confirmations and cancellations
+
+All channels use `HIGH` importance and default sound.
+
+**Configuration Required:**
+
+Backend `.env`:
+```env
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+```
+
+Frontend Firebase setup:
+1. **iOS**: Add `GoogleService-Info.plist` to `ios/` folder
+2. **Android**: Add `google-services.json` to `android/app/` folder
+3. **Install dependencies:**
+   ```bash
+   npm install @react-native-firebase/app @react-native-firebase/messaging
+   npm install @notifee/react-native
+   cd ios && pod install
+   ```
+
+**Initialization in App.tsx:**
+
+```typescript
+import { NotificationService } from '@/services/notification.service';
+
+useEffect(() => {
+  // Initialize notifications on app start
+  NotificationService.initialize();
+}, []);
+```
+
+**Backend Initialization (index.ts):**
+
+```typescript
+import { initializeFirebase } from './services/notification.service';
+
+// Initialize Firebase Admin at server startup
+initializeFirebase();
+```
+
+**Notification Flow:**
+
+1. **User enables notifications** → Request permission
+2. **Permission granted** → Get FCM token
+3. **Token obtained** → Register on backend
+4. **Backend event occurs** (new message, match invite, etc.)
+5. **Backend sends via FCM** → User's device(s) receive
+6. **App foreground** → Display local notification
+7. **App background** → System displays notification
+8. **User taps notification** → Navigate to relevant screen
+9. **Token refresh** → Update backend automatically
+10. **Invalid tokens** → Automatically cleaned from database
+
+**Notification Types:**
+- `new_message` → Navigate to chat
+- `match_invitation` → Navigate to match details
+- `match_reminder` → Navigate to match details
+- `booking_confirmed` → Navigate to booking details
+- `booking_cancelled` → Navigate to bookings list
+- `trial_ending` → Navigate to subscription screen
+- `payment_success` → Show success message
+- `payment_failed` → Navigate to payment method
+- `test` → Show test confirmation
+
+**Security:**
+- Device tokens are user-specific
+- Tokens expire and refresh automatically
+- Invalid tokens cleaned up
+- All API routes require authentication
+- Firebase signature verification on backend
+
+**Best Practices:**
+1. Request permission at appropriate time (not immediately on app launch)
+2. Explain value of notifications before requesting
+3. Handle permission denial gracefully
+4. Test on both iOS and Android
+5. Monitor Firebase Console for delivery rates
+6. Keep notification messages concise and actionable
+7. Use rich notifications with images when appropriate
+8. Set badge counts appropriately (iOS)
+9. Clear notifications when user views content
+10. Respect user preferences (mute settings)
+
+---
+
 ## Version History
+
+- **v1.3.0** (2025-11-16): Sprint 1 - COMPLETE! 🎉
+  - ✅ **Firebase Push Notifications:** Complete FCM integration
+    - Backend notification service with Firebase Admin SDK
+    - Device token management with automatic cleanup
+    - 8 notification templates for common events
+    - Frontend FCM service with Notifee for local notifications
+    - useNotifications hook for easy integration
+    - Android notification channels (4 channels)
+    - Badge count management for iOS
+    - Deep linking on notification tap
+  - **New Files Added:** 3 files (notification.service.ts backend, notification.service.ts frontend, useNotifications.ts hook)
+  - **Prisma Schema:** Added DeviceToken model and Platform enum
+  - **Sprint 1 Status:** ✅ 6/6 features complete (100%)
+  - **Completion:** ~55-60% of MVP (critical authentication and payment systems complete)
+
+- **v1.2.0** (2025-11-16): Sprint 1 - Payment Integration Complete
+  - ✅ **Stripe Integration:** Complete payment system with webhooks
+    - Backend service with subscription lifecycle management
+    - Frontend Stripe Payment Sheet integration
+    - Subscription screen with plan comparison UI
+    - Webhook handling for automated sync
+    - Customer Portal for self-service
+  - **New Files Added:** 3 files (stripe.service.ts backend, stripe.service.ts frontend, SubscriptionScreen.tsx)
+  - **Completion:** ~50-55% of MVP (critical payment system complete)
+
+- **v1.1.0** (2025-11-16): Sprint 1 - Critical MVP Features
+  - ✅ **Social Authentication:** Google, Apple, Facebook OAuth complete
+  - ✅ **Biometric Authentication:** Face ID, Touch ID, Fingerprint support
+  - ✅ **Email Service:** Verification, password reset, welcome, booking emails
+  - ✅ **Subscription Module:** In-App Purchase with StoreKit & Google Play Billing
+  - ⏳ Firebase Push Notifications (pending)
+  - **New Files Added:** 9 new services/components/hooks
+  - **Completion:** ~45-50% of MVP (increased from 30-40%)
 
 - **v1.0.0** (2025-11-16): Initial project structure and core features implemented
   - Backend API with authentication

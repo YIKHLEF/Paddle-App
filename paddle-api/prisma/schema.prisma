@@ -448,6 +448,20 @@ model Notification {
   @@map("notifications")
 }
 
+model DeviceToken {
+  id                String   @id @default(uuid())
+
+  userId            String
+  token             String   @unique
+  platform          Platform
+
+  lastUsedAt        DateTime @default(now())
+  createdAt         DateTime @default(now())
+
+  @@index([userId])
+  @@map("device_tokens")
+}
+
 // ==================== ENUMS ====================
 
 enum Gender {
@@ -563,4 +577,9 @@ enum NotificationType {
   SUBSCRIPTION_RENEWAL
   ACHIEVEMENT
   GENERAL
+}
+
+enum Platform {
+  ios
+  android
 }

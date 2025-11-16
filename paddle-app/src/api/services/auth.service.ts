@@ -153,4 +153,40 @@ export const authService = {
     );
     return response.data;
   },
+
+  /**
+   * Connexion avec Google
+   */
+  async loginWithGoogle(idToken: string): Promise<AuthResponse> {
+    const response = await axios.post<{ success: boolean; data: AuthResponse }>(
+      '/oauth/google',
+      { idToken }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Connexion avec Apple
+   */
+  async loginWithApple(
+    identityToken: string,
+    user?: { firstName: string; lastName: string }
+  ): Promise<AuthResponse> {
+    const response = await axios.post<{ success: boolean; data: AuthResponse }>(
+      '/oauth/apple',
+      { identityToken, user }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Connexion avec Facebook
+   */
+  async loginWithFacebook(accessToken: string): Promise<AuthResponse> {
+    const response = await axios.post<{ success: boolean; data: AuthResponse }>(
+      '/oauth/facebook',
+      { accessToken }
+    );
+    return response.data.data;
+  },
 };
