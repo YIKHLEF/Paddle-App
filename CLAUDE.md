@@ -7,10 +7,50 @@ This document provides comprehensive guidance for AI assistants working on the P
 **Project Name:** Paddle-App
 **Purpose:** Mobile application for paddle/padel players - Find partners, book courts, track performance
 **Type:** React Native Mobile App (iOS/Android) + Node.js Backend API
-**Status:** ✅ Development - Core architecture implemented
-**Version:** 1.0.0
+**Status:** ✅ Development - MVP in progress (Sprint 1 completed)
+**Version:** 1.1.0
 **Tech Stack:** React Native 0.74, TypeScript, Node.js 20, PostgreSQL, Prisma, Redux Toolkit
 **Business Model:** Freemium with subscriptions (Standard: 9.99€/month, Premium: 14.99€/month)
+
+## 🆕 Recent Updates (v1.1.0 - Sprint 1 Completed)
+
+### ✅ New Features Implemented:
+
+**1. Social Authentication (Google/Apple/Facebook)**
+- ✅ Backend OAuth service (`paddle-api/src/services/oauth.service.ts`)
+- ✅ OAuth routes (`paddle-api/src/routes/oauth.routes.ts`)
+- ✅ Frontend SocialLoginButtons component
+- ✅ Social auth configuration (`paddle-app/src/config/socialAuth.config.ts`)
+- ✅ Updated auth service with social login methods
+
+**2. Biometric Authentication (Face ID / Touch ID)**
+- ✅ Biometric service (`paddle-app/src/services/biometric.service.ts`)
+- ✅ useBiometric hook (`paddle-app/src/hooks/useBiometric.ts`)
+- ✅ BiometricSetting component for settings screen
+- ✅ Support for iOS Face ID, Touch ID and Android Fingerprint
+
+**3. Email Verification System**
+- ✅ Email service with templates (`paddle-api/src/services/email.service.ts`)
+- ✅ Verification email, password reset, welcome email, booking confirmation
+- ✅ Nodemailer integration for SMTP
+
+**4. Subscription & In-App Purchase Module**
+- ✅ Subscription service (`paddle-app/src/services/subscription.service.ts`)
+- ✅ useSubscription hook (`paddle-app/src/hooks/useSubscription.ts`)
+- ✅ Support for iOS (StoreKit) and Android (Google Play Billing)
+- ✅ Trial period management
+- ✅ Purchase restoration
+- ✅ Subscription status tracking
+
+**Progress:** Sprint 1 features (4/6 completed)
+- ✅ Social authentication
+- ✅ Biometric authentication
+- ✅ Email verification
+- ✅ Subscription module
+- ⏳ Stripe integration (pending)
+- ⏳ Firebase Push Notifications (pending)
+
+**Completion:** ~45-50% of MVP completed
 
 ## Project Structure
 
@@ -1470,7 +1510,259 @@ npx prisma migrate dev
 - [ ] Comments for complex logic
 - [ ] Tests written and passing
 
+## New Modules & Services (v1.1.0)
+
+### Social Authentication Module
+
+**Backend (`paddle-api/src/services/oauth.service.ts`):**
+- Google OAuth authentication with token verification
+- Apple Sign-In with identity token validation
+- Facebook Login with Graph API integration
+- Automatic user account linking with existing emails
+- Unique username generation
+- JWT token generation for authenticated sessions
+
+**Routes (`paddle-api/src/routes/oauth.routes.ts`):**
+- `POST /api/oauth/google` - Authenticate with Google ID token
+- `POST /api/oauth/apple` - Authenticate with Apple identity token
+- `POST /api/oauth/facebook` - Authenticate with Facebook access token
+
+**Frontend:**
+- **SocialLoginButtons Component** (`paddle-app/src/components/auth/SocialLoginButtons.tsx`)
+  - Pre-configured buttons for Google, Apple (iOS only), and Facebook
+  - Loading states for each provider
+  - Error handling with user-friendly messages
+  - Redux integration for storing auth state
+
+- **Configuration** (`paddle-app/src/config/socialAuth.config.ts`)
+  - Google Sign-In configuration
+  - Facebook SDK initialization
+  - Auto-initialization helper
+
+**Updated Services:**
+- `authService.loginWithGoogle(idToken)` - Call backend OAuth endpoint
+- `authService.loginWithApple(identityToken, user?)` - Apple authentication
+- `authService.loginWithFacebook(accessToken)` - Facebook authentication
+
+**Usage Example:**
+```typescript
+import { SocialLoginButtons } from '@/components/auth/SocialLoginButtons';
+
+<SocialLoginButtons
+  onSuccess={() => navigation.navigate('Home')}
+  onError={(error) => Alert.alert('Erreur', error)}
+/>
+```
+
+---
+
+### Biometric Authentication Module
+
+**Service (`paddle-app/src/services/biometric.service.ts`):**
+- Face ID support (iOS)
+- Touch ID support (iOS)
+- Fingerprint authentication (Android)
+- Availability checking per device
+- Enable/disable biometric preference storage
+- Fallback to password authentication
+
+**Hook (`paddle-app/src/hooks/useBiometric.ts`):**
+Simplified React hook for component usage:
+```typescript
+const {
+  isAvailable,      // Boolean: biometry available on device
+  isEnabled,        // Boolean: user has enabled it
+  biometryType,     // 'FaceID' | 'TouchID' | 'Biometrics'
+  authenticate,     // Function: prompt biometric auth
+  enable,           // Function: enable biometric login
+  disable,          // Function: disable biometric login
+  getBiometricName, // Function: get localized name
+} = useBiometric();
+```
+
+**Component (`paddle-app/src/components/settings/BiometricSetting.tsx`):**
+- Settings toggle for enabling/disabling biometric auth
+- Displays appropriate icon (face-recognition or fingerprint)
+- Confirmation dialogs for enable/disable actions
+- Auto-hides if biometry not available
+
+**Usage Example:**
+```typescript
+import { useBiometric } from '@/hooks/useBiometric';
+
+const LoginScreen = () => {
+  const { isEnabled, authenticate } = useBiometric();
+
+  const handleBiometricLogin = async () => {
+    if (isEnabled) {
+      const success = await authenticate('Connectez-vous à Paddle App');
+      if (success) {
+        // Proceed with login
+      }
+    }
+  };
+};
+```
+
+---
+
+### Email Service Module
+
+**Backend Service (`paddle-api/src/services/email.service.ts`):**
+Complete email transactional system with beautiful HTML templates:
+
+**Methods:**
+- `sendEmail(options)` - Generic email sender
+- `sendVerificationEmail(userId, email)` - Email verification with token
+- `sendPasswordResetEmail(email, resetToken)` - Password reset link
+- `sendWelcomeEmail(email, firstName)` - Welcome email after activation
+- `sendBookingConfirmation(email, bookingDetails)` - Booking confirmation
+
+**Features:**
+- HTML email templates with modern design
+- Responsive layout for mobile/desktop
+- Brand colors (#0066FF primary, #00D084 secondary)
+- Nodemailer integration for SMTP
+- Automatic text version generation
+- Professional styling with gradient headers
+
+**Email Templates Include:**
+- ✅ Verification email with expiring link (24h)
+- ✅ Password reset with security warning (1h expiry)
+- ✅ Welcome email with app features overview
+- ✅ Booking confirmation with all details
+- Future: Match reminders, subscription renewals, etc.
+
+**Configuration Required:**
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+FRONTEND_URL=https://paddle-app.com
+```
+
+**Usage Example:**
+```typescript
+import { EmailService } from '../services/email.service';
+
+// Send verification email
+await EmailService.sendVerificationEmail(user.id, user.email);
+
+// Send booking confirmation
+await EmailService.sendBookingConfirmation(user.email, {
+  courtName: 'Padel Center Paris',
+  date: '17 novembre 2025',
+  time: '14:00',
+  duration: 90,
+  price: 25,
+});
+```
+
+---
+
+### Subscription & In-App Purchase Module
+
+**Service (`paddle-app/src/services/subscription.service.ts`):**
+Complete IAP management for iOS and Android:
+
+**Features:**
+- StoreKit 2 (iOS) and Google Play Billing 6 (Android) integration
+- Subscription products management
+- Purchase flow handling
+- Receipt verification with backend
+- Purchase restoration (important for iOS App Review)
+- Subscription cancellation (redirects to store settings)
+- Trial period support
+- Auto-renewal management
+
+**Product SKUs:**
+```typescript
+SUBSCRIPTION_SKUS = {
+  STANDARD_MONTHLY: 'com.paddleapp.standard.monthly',
+  PREMIUM_MONTHLY: 'com.paddleapp.premium.monthly',
+  PREMIUM_ANNUAL: 'com.paddleapp.premium.annual',
+}
+```
+
+**Methods:**
+- `initialize()` - Connect to store and setup listeners
+- `getProducts()` - Fetch available subscriptions
+- `purchaseSubscription(productId)` - Initiate purchase
+- `restorePurchases()` - Restore previous purchases
+- `cancelSubscription()` - Guide user to cancel
+- `checkSubscriptionStatus()` - Get current subscription state
+
+**Hook (`paddle-app/src/hooks/useSubscription.ts`):**
+React hook for easy subscription management:
+
+```typescript
+const {
+  products,         // Available subscription products
+  status,           // Current subscription status
+  tier,             // 'FREE' | 'STANDARD' | 'PREMIUM'
+  isSubscribed,     // Boolean
+  expiryDate,       // Date | null
+  isTrialActive,    // Boolean
+  loading,          // Initial load state
+  purchasing,       // Purchase in progress
+  subscribe,        // (productId) => Promise<boolean>
+  restore,          // () => Promise<boolean>
+  cancel,           // () => Promise<void>
+  startTrial,       // (tier) => Promise<boolean>
+  canUpgrade,       // () => boolean
+  getProductPrice,  // (productId) => string | null
+} = useSubscription();
+```
+
+**Usage Example:**
+```typescript
+import { useSubscription } from '@/hooks/useSubscription';
+import { SUBSCRIPTION_SKUS } from '@/services/subscription.service';
+
+const SubscriptionScreen = () => {
+  const { products, subscribe, loading, tier } = useSubscription();
+
+  const handleSubscribe = async () => {
+    const success = await subscribe(SUBSCRIPTION_SKUS.PREMIUM_MONTHLY);
+    if (success) {
+      Alert.alert('Succès !', 'Vous êtes maintenant Premium !');
+    }
+  };
+
+  return (
+    <View>
+      {products.map(product => (
+        <Button
+          key={product.productId}
+          title={`${product.title} - ${product.localizedPrice}`}
+          onPress={() => subscribe(product.productId)}
+        />
+      ))}
+    </View>
+  );
+};
+```
+
+**Backend Integration Required:**
+- `POST /api/subscriptions/verify-purchase` - Verify receipt with Apple/Google
+- `POST /api/subscriptions/restore` - Restore previous subscriptions
+- `GET /api/subscriptions/status` - Get current subscription status
+- Webhooks for subscription events (renewal, cancellation, etc.)
+
+---
+
 ## Version History
+
+- **v1.1.0** (2025-11-16): Sprint 1 - Critical MVP Features
+  - ✅ **Social Authentication:** Google, Apple, Facebook OAuth complete
+  - ✅ **Biometric Authentication:** Face ID, Touch ID, Fingerprint support
+  - ✅ **Email Service:** Verification, password reset, welcome, booking emails
+  - ✅ **Subscription Module:** In-App Purchase with StoreKit & Google Play Billing
+  - ⏳ Stripe integration (pending)
+  - ⏳ Firebase Push Notifications (pending)
+  - **New Files Added:** 9 new services/components/hooks
+  - **Completion:** ~45-50% of MVP (increased from 30-40%)
 
 - **v1.0.0** (2025-11-16): Initial project structure and core features implemented
   - Backend API with authentication
