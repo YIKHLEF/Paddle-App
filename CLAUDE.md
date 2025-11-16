@@ -7,12 +7,12 @@ This document provides comprehensive guidance for AI assistants working on the P
 **Project Name:** Paddle-App
 **Purpose:** Mobile application for paddle/padel players - Find partners, book courts, track performance
 **Type:** React Native Mobile App (iOS/Android) + Node.js Backend API
-**Status:** ✅ Development - Sprint 2 in progress (Real-time Chat Complete!)
-**Version:** 1.4.0
+**Status:** ✅ Development - Sprint 2 in progress (Geolocation & Maps Complete!)
+**Version:** 1.5.0
 **Tech Stack:** React Native 0.74, TypeScript, Node.js 20, PostgreSQL, Prisma, Redux Toolkit, Stripe, Firebase, Socket.io
 **Business Model:** Freemium with subscriptions (Standard: 9.99€/month, Premium: 14.99€/month)
 
-## 🆕 Recent Updates (v1.4.0 - Sprint 2: Real-time Chat!)
+## 🆕 Recent Updates (v1.5.0 - Sprint 2: Geolocation & Maps!)
 
 ### ✅ New Features Implemented:
 
@@ -64,7 +64,7 @@ This document provides comprehensive guidance for AI assistants working on the P
 - ✅ Background and foreground notification handling
 - ✅ Deep linking on notification tap
 
-**7. Real-time Chat with Socket.io** ✅ NEW!
+**7. Real-time Chat with Socket.io** ✅
 - ✅ Socket.io backend configuration with JWT authentication (`paddle-api/src/config/socket.config.ts`)
 - ✅ Chat service backend for REST API (`paddle-api/src/services/chat.service.ts`)
 - ✅ Chat routes with 12 endpoints (`paddle-api/src/routes/chat.routes.ts`)
@@ -79,15 +79,29 @@ This document provides comprehensive guidance for AI assistants working on the P
 - ✅ Unread count tracking
 - ✅ Match chat support for in-game communication
 
-**Progress:** Sprint 1 Complete + Sprint 2 (1/5 completed)
+**8. Geolocation & Maps** ✅ NEW!
+- ✅ Geolocation service with permissions and tracking (`paddle-app/src/services/geolocation.service.ts`)
+- ✅ useGeolocation hook for React integration (`paddle-app/src/hooks/useGeolocation.ts`)
+- ✅ MapView component with react-native-maps (`paddle-app/src/components/map/MapView.tsx`)
+- ✅ CourtMapView specialized component (`paddle-app/src/components/map/CourtMapView.tsx`)
+- ✅ Location service backend for geographic search (`paddle-api/src/services/location.service.ts`)
+- ✅ Location routes with 6 endpoints (`paddle-api/src/routes/location.routes.ts`)
+- ✅ Haversine distance calculations
+- ✅ Bounding box optimization for queries
+- ✅ Location-based search (players, courts, clubs, matches)
+- ✅ Distance sorting and filtering
+- ✅ User location tracking and updates
+- ✅ Geographic statistics and insights
+
+**Progress:** Sprint 1 Complete + Sprint 2 (2/5 completed)
 - ✅ **Sprint 1:** All 6 features complete (100%)
 - ✅ **Sprint 2:** Real-time Chat (100%)
-- ⏳ Geolocation & Maps (0%)
+- ✅ **Sprint 2:** Geolocation & Maps (100%)
 - ⏳ Complete Match Management (0%)
 - ⏳ Complete Booking System (0%)
-- ⏳ Court/Club Search with Maps (0%)
+- ⏳ Tournament System (0%)
 
-**Completion:** ~60-65% of MVP completed (Real-time engagement features operational!)
+**Completion:** ~65-70% of MVP completed (Location-based discovery operational!)
 
 ## Project Structure
 
@@ -2500,6 +2514,310 @@ REACT_APP_API_URL=http://localhost:3000  # Socket.io server URL
 8. Clear unread counts when viewing
 9. Test with poor network conditions
 10. Monitor Socket.io connection status
+
+---
+
+### Geolocation & Maps Module
+
+**Frontend Geolocation Service (`paddle-app/src/services/geolocation.service.ts`):**
+Complete location tracking and distance calculation service:
+
+**Features:**
+- Location permissions handling (iOS & Android)
+- Current position retrieval with high accuracy
+- Position watching with configurable distance filter
+- Haversine distance calculations
+- Distance formatting for display
+- Radius-based filtering
+- Location sorting by distance
+- Region calculation for map bounds
+- Settings deep linking
+
+**Core Methods:**
+- `requestPermission()` - Request location permission (platform-specific)
+- `checkPermission()` - Check if permission granted
+- `getCurrentPosition(options?)` - Get current location once
+- `getLastKnownPosition()` - Get cached location
+- `watchPosition(onSuccess, onError, options?)` - Continuous tracking
+- `clearWatch(watchId?)` - Stop position watching
+- `calculateDistance(point1, point2)` - Haversine distance in km
+- `formatDistance(distanceKm)` - Format for display (m/km)
+- `isWithinRadius(center, point, radiusKm)` - Check if in range
+- `sortByDistance(userLocation, items)` - Sort array by distance
+- `filterByRadius(userLocation, items, radiusKm)` - Filter by range
+- `getCenterPoint(locations)` - Calculate geographic center
+- `getRegionForCoordinates(locations, padding?)` - Map region bounds
+- `openLocationSettings()` - Deep link to settings
+
+**Hook (`paddle-app/src/hooks/useGeolocation.ts`):**
+React hook for easy location management in components:
+
+**Returns:**
+```typescript
+{
+  // State
+  location: LocationWithAccuracy | null,
+  hasPermission: boolean,
+  loading: boolean,
+  error: string | null,
+  isReady: boolean,  // hasPermission && location !== null
+
+  // Permission methods
+  checkPermission: () => Promise<boolean>,
+  requestPermission: () => Promise<boolean>,
+  openSettings: () => Promise<void>,
+
+  // Position methods
+  getCurrentPosition: () => Promise<LocationWithAccuracy | null>,
+  refresh: () => Promise<LocationWithAccuracy | null>,
+  startWatchingPosition: () => void,
+  stopWatchingPosition: () => void,
+
+  // Distance utilities
+  getDistanceTo: (targetLocation: Location) => number | null,
+  formatDistance: (targetLocation: Location) => string | null,
+  isWithinRadius: (targetLocation: Location, radiusKm: number) => boolean,
+  sortByDistance: <T>(items: T[]) => T[],
+  filterByRadius: <T>(items: T[], radiusKm: number) => T[],
+}
+```
+
+**Map Components:**
+
+**MapView (`paddle-app/src/components/map/MapView.tsx`):**
+Base map component using react-native-maps with Google Maps provider:
+
+**Props:**
+```typescript
+{
+  initialRegion?: Region,
+  markers?: MapMarker[],
+  onMarkerPress?: (marker: MapMarker) => void,
+  onMapPress?: (coordinate: LatLng) => void,
+  onRegionChange?: (region: Region) => void,
+  showUserLocation?: boolean,
+  showRadius?: boolean,
+  radiusKm?: number,
+  radiusCenter?: LatLng,
+  followUserLocation?: boolean,
+  style?: any,
+}
+```
+
+**Features:**
+- Google Maps integration
+- Custom markers with types (court, player, club, match)
+- Search radius visualization with circle overlay
+- User location display
+- Camera animation
+- Automatic fit to markers
+- Touch event handling
+
+**CourtMapView (`paddle-app/src/components/map/CourtMapView.tsx`):**
+Specialized map for displaying courts:
+
+**Props:**
+```typescript
+{
+  courts: Court[],
+  onCourtPress?: (court: Court) => void,
+  showRadius?: boolean,
+  radiusKm?: number,
+  autoFitMarkers?: boolean,
+  style?: any,
+}
+```
+
+**Features:**
+- Automatic court marker generation
+- Color coding (Indoor: blue, Outdoor: green)
+- Auto-fit to show all courts
+- Distance-based sorting
+- Cluster support for many courts
+
+**Backend Location Service (`paddle-api/src/services/location.service.ts`):**
+Geographic search and matching service with optimized queries:
+
+**Core Methods:**
+- `calculateDistance(lat1, lon1, lat2, lon2)` - Haversine formula
+- `getBoundingBox(lat, lon, radiusKm)` - Optimize DB queries
+- `findNearbyPlayers(query, options?)` - Search players by location
+- `findNearbyClubs(query, options?)` - Search clubs by location
+- `findNearbyCourts(query, options?)` - Search courts by location
+- `findNearbyMatches(query, options?)` - Search matches by location
+- `updateUserLocation(userId, lat, lon, location?)` - Update position
+- `getLocationStats(lat, lon, radiusKm)` - Geographic statistics
+
+**Search Features:**
+- **Bounding box optimization:** Pre-filter with lat/lng ranges before distance calc
+- **Skill level filtering:** Match players by skill
+- **Court type filtering:** Indoor vs Outdoor
+- **Availability filtering:** Only show available courts/clubs
+- **Participant exclusion:** Don't show matches user already joined
+- **Distance sorting:** Results ordered by proximity
+- **Configurable radius:** 0.1km to 100km range
+
+**Routes (`paddle-api/src/routes/location.routes.ts`):**
+
+```typescript
+GET    /api/location/players/nearby   // Find players (Private)
+GET    /api/location/clubs/nearby     // Find clubs (Public)
+GET    /api/location/courts/nearby    // Find courts (Public)
+GET    /api/location/matches/nearby   // Find matches (Private)
+PUT    /api/location/update           // Update user location (Private)
+GET    /api/location/stats            // Get location stats (Private)
+```
+
+**Query Parameters:**
+- `latitude` (required) - User latitude
+- `longitude` (required) - User longitude
+- `radiusKm` (optional) - Search radius, default 10km
+- `skillLevel` (optional) - Filter by skill level
+- `type` (optional) - Court type (INDOOR/OUTDOOR)
+- `limit` (optional) - Max results, default 50
+
+**Usage Example:**
+
+```typescript
+import { useGeolocation } from '@/hooks/useGeolocation';
+import { CourtMapView } from '@/components/map/CourtMapView';
+
+function CourtsMapScreen() {
+  const {
+    location,
+    hasPermission,
+    loading,
+    requestPermission,
+    sortByDistance,
+  } = useGeolocation({ watchPosition: true });
+
+  const [courts, setCourts] = useState([]);
+
+  useEffect(() => {
+    if (hasPermission && location) {
+      searchNearbyCourts();
+    }
+  }, [location, hasPermission]);
+
+  const searchNearbyCourts = async () => {
+    const response = await axios.get('/location/courts/nearby', {
+      params: {
+        latitude: location!.latitude,
+        longitude: location!.longitude,
+        radiusKm: 10,
+        type: 'INDOOR',
+      },
+    });
+
+    // Courts are already sorted by distance from backend
+    setCourts(response.data.courts);
+  };
+
+  const handleCourtPress = (court) => {
+    navigation.navigate('CourtDetails', { courtId: court.id });
+  };
+
+  if (!hasPermission) {
+    return (
+      <View>
+        <Text>Permission de localisation requise</Text>
+        <Button title="Autoriser" onPress={requestPermission} />
+      </View>
+    );
+  }
+
+  return (
+    <CourtMapView
+      courts={courts}
+      onCourtPress={handleCourtPress}
+      showRadius={true}
+      radiusKm={10}
+      autoFitMarkers={true}
+    />
+  );
+}
+```
+
+**Configuration Required:**
+
+Frontend dependencies:
+```bash
+npm install react-native-maps
+npm install @react-native-community/geolocation
+
+# iOS: Add to Podfile
+pod 'react-native-google-maps', :path => '../node_modules/react-native-maps'
+
+# iOS: Add to Info.plist
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>We need your location to find nearby courts and players</string>
+<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+<string>We need your location to find nearby courts and players</string>
+
+# Android: Add to AndroidManifest.xml
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+# Android: Add Google Maps API key
+<meta-data
+  android:name="com.google.android.geo.API_KEY"
+  android:value="YOUR_GOOGLE_MAPS_API_KEY"/>
+```
+
+**Performance Optimizations:**
+
+1. **Bounding Box Pre-filtering:**
+   ```typescript
+   // Instead of calculating distance for ALL records:
+   // ❌ SELECT * FROM users
+   //    WHERE distance(lat, lng, userLat, userLng) < 10
+
+   // Use bounding box first (uses lat/lng indexes):
+   // ✅ SELECT * FROM users
+   //    WHERE lat BETWEEN minLat AND maxLat
+   //    AND lng BETWEEN minLng AND maxLng
+   //    THEN calculate exact distance
+   ```
+
+2. **Database Indexing:**
+   - Add indexes on `latitude` and `longitude` columns
+   - Composite index: `(latitude, longitude)` for best performance
+
+3. **Distance Caching:**
+   - Cache calculated distances to avoid recalculation
+   - Use `getLastKnownPosition()` when accuracy isn't critical
+
+4. **Position Watch Tuning:**
+   - Set `distanceFilter` to avoid excessive updates (10m recommended)
+   - Use `interval` to limit update frequency
+
+**Best Practices:**
+
+1. Request permission at appropriate time (not on app launch)
+2. Explain why location is needed before requesting
+3. Handle permission denial gracefully
+4. Cache last known position
+5. Use bounding box for large datasets
+6. Set reasonable radius limits (100km max)
+7. Add database indexes for lat/lng
+8. Test with various locations and densities
+9. Consider battery impact of continuous tracking
+10. Provide manual location input as fallback
+
+**Distance Calculation:**
+
+Uses Haversine formula for accurate great-circle distance:
+```typescript
+// Accuracy: ±0.3% for typical distances
+// Performance: ~0.001ms per calculation
+// Range: Works globally, any two points on Earth
+```
+
+**Limitations:**
+- Assumes spherical Earth (good enough for < 1000km)
+- Doesn't account for terrain or roads
+- Not suitable for navigation routing
+- For routing, use Google Maps Directions API
 
 ---
 
