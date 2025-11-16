@@ -138,36 +138,53 @@ npm run android
 
 ## 📦 Fonctionnalités Principales
 
-### ✅ Implémenté (MVP)
+### ✅ Backend Complet (Sprint 1 + Sprint 2)
 
 - [x] Architecture du projet (Backend + Mobile)
 - [x] Design system complet
-- [x] Authentification JWT
+- [x] Authentification JWT + OAuth (Google, Apple, Facebook)
+- [x] Authentification biométrique (Face ID, Touch ID)
 - [x] Navigation React Navigation
 - [x] Redux store configuration
 - [x] Schéma de base de données Prisma
-- [x] API d'authentification
+- [x] API d'authentification (7 endpoints)
 - [x] Middleware de sécurité
+- [x] Système d'abonnement Stripe (8 endpoints)
+- [x] Notifications push Firebase (5 endpoints)
+- [x] Chat en temps réel Socket.io (12 endpoints)
+- [x] Géolocalisation et cartes (6 endpoints)
+- [x] Gestion complète des matchs (14 endpoints)
+- [x] Système de réservation (13 endpoints)
+- [x] Système de tournois (10 endpoints)
+- [x] Email transactionnel (Nodemailer)
+- [x] Services de paiement (Stripe)
+- [x] 85+ API endpoints opérationnels
 
-### 🚧 En Cours
+### 🚧 En Cours (Sprint 3 - UI Integration)
 
-- [ ] Composants UI de base
-- [ ] Écrans d'authentification
-- [ ] Écran d'accueil (Dashboard)
-- [ ] Recherche de joueurs
-- [ ] Système de réservation
+- [x] Composants UI de base (7 composants communs)
+- [x] Écrans d'authentification (Login, SignUp, Onboarding, ForgotPassword)
+- [x] Écran d'accueil (Dashboard)
+- [x] Écran de recherche
+- [x] Écran de profil
+- [x] Écran de matchs (liste avec tabs)
+- [x] Écran de paramètres (More/Settings avec 5 sections)
+- [x] Écran d'abonnement (plan comparison avec Stripe)
+- [ ] Écrans de réservation (4 screens)
+- [ ] Écrans de tournois (5 screens)
+- [ ] Écran de détails de match (1 screen)
+- [ ] Écrans de statistiques (3 screens)
+- [ ] Écrans de chat (3 screens)
 
-### 📋 À Développer
+### 📋 À Développer (Sprint 4+)
 
-- [ ] Gestion des matchs
-- [ ] Chat en temps réel
-- [ ] Statistiques utilisateur
-- [ ] Système d'abonnement
-- [ ] Notifications push
-- [ ] Géolocalisation et cartes
 - [ ] Upload de photos/vidéos
-- [ ] Système de notation
-- [ ] Tournois
+- [ ] Analyse vidéo (IA Premium)
+- [ ] Coaching IA (Premium)
+- [ ] Système de notation/reviews
+- [ ] Panels d'administration
+- [ ] Analytics avancées
+- [ ] Fonctionnalités sociales avancées
 
 ## 💰 Modèle Business
 
@@ -264,13 +281,13 @@ Pour toute question ou problème :
 
 ## 🎯 Roadmap
 
-**Phase 1 (MVP - 3 mois) :** Authentification, Recherche joueurs, Réservations, Matchs basiques
-**Phase 2 (Croissance - 3 mois) :** Matching IA, Stats avancées, Classement
-**Phase 3 (Communauté - 3 mois) :** Social features, Tournois, Groupes
-**Phase 4 (Premium - 3 mois) :** Analyse vidéo IA, Coaching, Features premium
+**✅ Phase 1 (MVP Backend - COMPLETE!) :** Authentification, OAuth, Stripe, Firebase, Socket.io
+**✅ Phase 2 (Core Features - COMPLETE!) :** Chat, Géolocalisation, Matchs, Réservations, Tournois
+**🚀 Phase 3 (UI Integration - IN PROGRESS) :** Écrans de booking, tournois, match, stats, chat
+**Phase 4 (Premium - À venir) :** Analyse vidéo IA, Coaching, Features premium avancées
 
 ---
 
 **Développé avec ❤️ et 🎾 par l'équipe Paddle App**
 
-Version 1.0.0 | Dernière mise à jour : 16 Novembre 2025
+Version 1.9.0-dev | Dernière mise à jour : 16 Novembre 2025 | Sprint 3 Starting!
