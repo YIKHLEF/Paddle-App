@@ -7,12 +7,12 @@ This document provides comprehensive guidance for AI assistants working on the P
 **Project Name:** Paddle-App
 **Purpose:** Mobile application for paddle/padel players - Find partners, book courts, track performance
 **Type:** React Native Mobile App (iOS/Android) + Node.js Backend API
-**Status:** ✅ Development - MVP in progress (Sprint 1 Complete!)
-**Version:** 1.3.0
-**Tech Stack:** React Native 0.74, TypeScript, Node.js 20, PostgreSQL, Prisma, Redux Toolkit, Stripe, Firebase
+**Status:** ✅ Development - Sprint 2 in progress (Real-time Chat Complete!)
+**Version:** 1.4.0
+**Tech Stack:** React Native 0.74, TypeScript, Node.js 20, PostgreSQL, Prisma, Redux Toolkit, Stripe, Firebase, Socket.io
 **Business Model:** Freemium with subscriptions (Standard: 9.99€/month, Premium: 14.99€/month)
 
-## 🆕 Recent Updates (v1.3.0 - Sprint 1 Complete!)
+## 🆕 Recent Updates (v1.4.0 - Sprint 2: Real-time Chat!)
 
 ### ✅ New Features Implemented:
 
@@ -52,7 +52,7 @@ This document provides comprehensive guidance for AI assistants working on the P
 - ✅ 14-day free trial support
 - ✅ Secure payment processing (PCI compliant)
 
-**6. Firebase Push Notifications** ✅ NEW
+**6. Firebase Push Notifications** ✅
 - ✅ Backend notification service with Firebase Admin SDK (`paddle-api/src/services/notification.service.ts`)
 - ✅ Notification routes with 5 endpoints (`paddle-api/src/routes/notification.routes.ts`)
 - ✅ Frontend FCM service with multi-platform support (`paddle-app/src/services/notification.service.ts`)
@@ -64,15 +64,30 @@ This document provides comprehensive guidance for AI assistants working on the P
 - ✅ Background and foreground notification handling
 - ✅ Deep linking on notification tap
 
-**Progress:** Sprint 1 features (6/6 completed) ✅ COMPLETE!
-- ✅ Social authentication (100%)
-- ✅ Biometric authentication (100%)
-- ✅ Email verification (100%)
-- ✅ Subscription module (100%)
-- ✅ Stripe integration (100%)
-- ✅ Firebase Push Notifications (100%)
+**7. Real-time Chat with Socket.io** ✅ NEW!
+- ✅ Socket.io backend configuration with JWT authentication (`paddle-api/src/config/socket.config.ts`)
+- ✅ Chat service backend for REST API (`paddle-api/src/services/chat.service.ts`)
+- ✅ Chat routes with 12 endpoints (`paddle-api/src/routes/chat.routes.ts`)
+- ✅ Socket.io client service for real-time messaging (`paddle-app/src/services/chat.service.ts`)
+- ✅ useChat hook for easy integration (`paddle-app/src/hooks/useChat.ts`)
+- ✅ Direct and group conversations support
+- ✅ Real-time message delivery and read receipts
+- ✅ Typing indicators
+- ✅ Offline message notifications (via FCM)
+- ✅ Message pagination and history loading
+- ✅ Conversation muting and deletion
+- ✅ Unread count tracking
+- ✅ Match chat support for in-game communication
 
-**Completion:** ~55-60% of MVP completed (Sprint 1 fully complete!)
+**Progress:** Sprint 1 Complete + Sprint 2 (1/5 completed)
+- ✅ **Sprint 1:** All 6 features complete (100%)
+- ✅ **Sprint 2:** Real-time Chat (100%)
+- ⏳ Geolocation & Maps (0%)
+- ⏳ Complete Match Management (0%)
+- ⏳ Complete Booking System (0%)
+- ⏳ Court/Club Search with Maps (0%)
+
+**Completion:** ~60-65% of MVP completed (Real-time engagement features operational!)
 
 ## Project Structure
 
@@ -2189,7 +2204,325 @@ initializeFirebase();
 
 ---
 
+### Real-time Chat Module (Socket.io)
+
+**Backend Configuration (`paddle-api/src/config/socket.config.ts`):**
+Complete Socket.io server setup with JWT authentication and real-time event handling:
+
+**Features:**
+- Socket.io server initialization with CORS support
+- JWT-based authentication middleware
+- User socket mapping for online status tracking
+- Room-based messaging (conversations and matches)
+- Automatic offline participant notifications
+- Connection/disconnection handling
+- Last active timestamp updates
+
+**Socket Events:**
+- `join_conversation` - Join a conversation room
+- `leave_conversation` - Leave a conversation room
+- `send_message` - Send a message in real-time
+- `mark_as_read` - Mark messages as read
+- `typing_start` - User started typing
+- `typing_stop` - User stopped typing
+- `join_match_chat` - Join match-specific chat
+- `send_match_message` - Send message in match chat
+
+**Emitted Events:**
+- `new_message` - New message received
+- `user_typing` - User is typing
+- `user_stopped_typing` - User stopped typing
+- `messages_read` - Messages marked as read
+- `new_match_message` - New match chat message
+- `message_error` - Error sending message
+
+**Backend Service (`paddle-api/src/services/chat.service.ts`):**
+Complete chat management via REST API for history and conversation management:
+
+**Features:**
+- Direct and group conversation management
+- Message pagination and history
+- Unread count tracking
+- Conversation search
+- Mute/unmute conversations
+- Message formatting with participant details
+- Socket.io integration for real-time updates
+
+**Core Methods:**
+- `getOrCreateDirectConversation(userId, otherUserId)` - Get or create 1-on-1 chat
+- `createConversation(data)` - Create new conversation (direct/group)
+- `getUserConversations(userId)` - List all user conversations
+- `getConversationById(conversationId, userId)` - Get conversation details
+- `getConversationMessages(conversationId, userId, options)` - Load message history
+- `sendMessage(userId, data)` - Send message via REST (fallback)
+- `markMessagesAsRead(userId, conversationId)` - Mark as read
+- `getUnreadCount(userId)` - Get total unread messages
+- `deleteConversation(userId, conversationId)` - Delete for user
+- `muteConversation(userId, conversationId, mutedUntil)` - Mute notifications
+- `searchConversations(userId, query)` - Search conversations
+
+**Routes (`paddle-api/src/routes/chat.routes.ts`):**
+
+All routes require authentication:
+
+```typescript
+GET    /api/chat/conversations              // List all conversations
+GET    /api/chat/conversations/:id          // Get conversation details
+POST   /api/chat/conversations              // Create new conversation
+POST   /api/chat/conversations/direct       // Create/get direct conversation
+GET    /api/chat/conversations/:id/messages // Get message history
+POST   /api/chat/messages                   // Send message (REST fallback)
+PUT    /api/chat/conversations/:id/read     // Mark messages as read
+GET    /api/chat/unread-count               // Get total unread count
+DELETE /api/chat/conversations/:id          // Delete conversation
+PUT    /api/chat/conversations/:id/mute     // Mute/unmute conversation
+GET    /api/chat/search                     // Search conversations
+```
+
+**Frontend Service (`paddle-app/src/services/chat.service.ts`):**
+Socket.io client for React Native with real-time messaging:
+
+**Methods:**
+- `initialize()` - Connect to Socket.io server with JWT
+- `disconnect()` - Disconnect from server
+- `joinConversation(conversationId)` - Join conversation room
+- `leaveConversation(conversationId)` - Leave conversation room
+- `sendMessage(data)` - Send message via Socket.io
+- `markAsRead(conversationId)` - Mark as read
+- `startTyping(conversationId)` - Show typing indicator
+- `stopTyping(conversationId)` - Hide typing indicator
+- `getConversations()` - Fetch all conversations (REST)
+- `getConversation(conversationId)` - Get conversation details (REST)
+- `getOrCreateDirectConversation(userId)` - Direct chat (REST)
+- `createGroupConversation(participantIds, name, avatarUrl)` - Group chat (REST)
+- `getMessages(conversationId, options)` - Load message history (REST)
+- `getUnreadCount()` - Get total unread count (REST)
+- `deleteConversation(conversationId)` - Delete conversation (REST)
+- `muteConversation(conversationId, mutedUntil)` - Mute/unmute (REST)
+- `searchConversations(query)` - Search (REST)
+
+**Event Handlers:**
+- `onNewMessage(handler)` - Subscribe to new messages
+- `onTypingStart(handler)` - Subscribe to typing indicators
+- `onTypingStop(handler)` - Subscribe to typing stop
+- `onMessagesRead(handler)` - Subscribe to read receipts
+- `onError(handler)` - Subscribe to errors
+
+**Hook (`paddle-app/src/hooks/useChat.ts`):**
+React hook for easy chat integration in components:
+
+**Returns:**
+```typescript
+{
+  // State
+  conversations: Conversation[],
+  currentConversation: Conversation | null,
+  messages: Message[],
+  unreadCount: number,
+  loading: boolean,
+  error: string | null,
+  isTyping: Record<string, boolean>,  // userId -> isTyping
+  isConnected: boolean,
+
+  // Methods
+  loadConversations: () => Promise<void>,
+  loadConversation: (conversationId: string) => Promise<void>,
+  loadMessages: (conversationId: string, options?) => Promise<void>,
+  loadMoreMessages: (conversationId: string) => Promise<void>,
+  getOrCreateDirectConversation: (userId: string) => Promise<Conversation | null>,
+  createGroupConversation: (participantIds[], name, avatarUrl?) => Promise<Conversation | null>,
+  sendMessage: (data: SendMessageData) => void,
+  markAsRead: (conversationId: string) => void,
+  startTyping: (conversationId: string) => void,
+  stopTyping: (conversationId: string) => void,
+  deleteConversation: (conversationId: string) => Promise<void>,
+  muteConversation: (conversationId: string, mutedUntil: Date | null) => Promise<void>,
+  updateUnreadCount: () => Promise<void>,
+}
+```
+
+**Usage Example:**
+
+```typescript
+import { useChat } from '@/hooks/useChat';
+
+function ChatScreen({ route }) {
+  const conversationId = route.params.conversationId;
+  const {
+    messages,
+    currentConversation,
+    isTyping,
+    loading,
+    sendMessage,
+    markAsRead,
+    startTyping,
+    stopTyping,
+  } = useChat(conversationId);
+
+  const handleSend = (text: string) => {
+    sendMessage({
+      conversationId,
+      content: text,
+      type: 'TEXT',
+    });
+  };
+
+  const handleTyping = () => {
+    startTyping(conversationId);
+  };
+
+  useEffect(() => {
+    // Mark as read when viewing conversation
+    markAsRead(conversationId);
+  }, [conversationId]);
+
+  return (
+    <View>
+      <MessageList messages={messages} />
+      {isTyping[otherUserId] && <TypingIndicator />}
+      <MessageInput onSend={handleSend} onTyping={handleTyping} />
+    </View>
+  );
+}
+```
+
+**Configuration Required:**
+
+Backend `.env`:
+```env
+JWT_SECRET=your-jwt-secret
+FRONTEND_URL=http://localhost:3000  # For CORS
+```
+
+Frontend `.env`:
+```env
+REACT_APP_API_URL=http://localhost:3000  # Socket.io server URL
+```
+
+**Setup Instructions:**
+
+1. **Install Socket.io dependencies:**
+   ```bash
+   # Backend
+   npm install socket.io
+
+   # Frontend
+   npm install socket.io-client
+   ```
+
+2. **Initialize Socket.io server:**
+   ```typescript
+   // paddle-api/src/index.ts
+   import { createServer } from 'http';
+   import { SocketService } from './config/socket.config';
+
+   const httpServer = createServer(app);
+   SocketService.initialize(httpServer);
+
+   httpServer.listen(PORT, () => {
+     console.log(`Server running on port ${PORT}`);
+   });
+   ```
+
+3. **Initialize Socket.io client:**
+   ```typescript
+   // paddle-app/App.tsx
+   import { ChatService } from '@/services/chat.service';
+
+   useEffect(() => {
+     // Initialize chat when user is authenticated
+     if (isAuthenticated) {
+       ChatService.initialize();
+     }
+
+     return () => {
+       ChatService.disconnect();
+     };
+   }, [isAuthenticated]);
+   ```
+
+**Message Flow:**
+
+1. **User sends message** → `sendMessage()` called
+2. **Socket.io emits** → `send_message` event to server
+3. **Server validates** → Check authentication and participation
+4. **Message saved** → Created in database via Prisma
+5. **Server emits** → `new_message` to all conversation participants
+6. **Clients receive** → Update local message list
+7. **Offline users** → Receive push notification via FCM
+8. **Read receipts** → Automatically sent when viewing conversation
+9. **Typing indicators** → Shown with 3s auto-timeout
+10. **Unread count** → Updated in real-time for all clients
+
+**Features:**
+
+✅ **Real-time Messaging:**
+- Instant message delivery via WebSocket
+- Fallback to REST API if Socket.io unavailable
+- Automatic reconnection with exponential backoff
+- Message queuing during reconnection
+
+✅ **Conversation Types:**
+- Direct 1-on-1 conversations
+- Group conversations with multiple participants
+- Match-specific chat rooms
+
+✅ **Advanced Features:**
+- Typing indicators with auto-timeout
+- Read receipts and message status
+- Message pagination for history
+- Unread count tracking
+- Online/offline status
+- Conversation muting
+- Message search
+
+✅ **Offline Support:**
+- Push notifications for offline users
+- Message persistence in database
+- Automatic sync on reconnection
+- REST API fallback
+
+**Security:**
+- JWT authentication for Socket.io connections
+- User participation verification
+- Room-based access control
+- Message sender validation
+- CORS protection
+
+**Best Practices:**
+1. Always disconnect Socket.io on logout
+2. Join conversation rooms when viewing
+3. Leave rooms when navigating away
+4. Mark messages as read when viewing
+5. Handle reconnection gracefully
+6. Use typing indicators sparingly (auto-timeout)
+7. Paginate messages for long conversations
+8. Clear unread counts when viewing
+9. Test with poor network conditions
+10. Monitor Socket.io connection status
+
+---
+
 ## Version History
+
+- **v1.4.0** (2025-11-16): Sprint 2 - Real-time Chat Complete!
+  - ✅ **Real-time Chat with Socket.io:** Complete messaging system
+    - Backend Socket.io configuration with JWT authentication
+    - Chat service backend for conversation management
+    - 12 REST API endpoints for chat operations
+    - Frontend Socket.io client for real-time messaging
+    - useChat hook for easy React integration
+    - Direct and group conversations support
+    - Real-time message delivery and read receipts
+    - Typing indicators with auto-timeout
+    - Offline message notifications (integrated with FCM)
+    - Message pagination and history loading
+    - Conversation muting and deletion
+    - Unread count tracking
+    - Match chat support for in-game communication
+  - **New Files Added:** 4 files (socket.config.ts, chat.service.ts backend, chat.routes.ts, chat.service.ts frontend, useChat.ts)
+  - **Sprint 2 Progress:** 1/5 features complete (20%)
+  - **Completion:** ~60-65% of MVP (real-time engagement features operational!)
 
 - **v1.3.0** (2025-11-16): Sprint 1 - COMPLETE! 🎉
   - ✅ **Firebase Push Notifications:** Complete FCM integration
