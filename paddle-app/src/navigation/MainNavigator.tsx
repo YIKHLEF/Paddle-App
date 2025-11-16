@@ -10,6 +10,7 @@ import { useTheme } from '@/hooks/useTheme';
 import type { MainTabParamList } from './types';
 import { HomeScreen } from '@/screens/home';
 import { SearchScreen } from '@/screens/search';
+import { MatchesScreen } from '@/screens/matches';
 import { ProfileScreen } from '@/screens/profile';
 
 // Placeholder pour les écrans non encore implémentés
@@ -71,15 +72,14 @@ const MainNavigator = () => {
 
       <Tab.Screen
         name="Matches"
+        component={MatchesScreen}
         options={{
           tabBarLabel: 'Matchs',
           tabBarIcon: ({ color, size }) => (
             <Icon name="tennis" size={size} color={color} />
           ),
         }}
-      >
-        {() => <PlaceholderScreen title="Matchs" />}
-      </Tab.Screen>
+      />
 
       <Tab.Screen
         name="Profile"
