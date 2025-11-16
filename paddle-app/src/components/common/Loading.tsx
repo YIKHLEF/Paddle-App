@@ -36,8 +36,8 @@ export const Loading: React.FC<LoadingProps> = ({
       };
 
   return (
-    <View style={[containerStyle, style]}>
-      <ActivityIndicator size={size} color={theme.colors.primary} />
+    <View style={[containerStyle, style]} testID="loading-container">
+      <ActivityIndicator size={size} color={theme.colors.primary} testID="loading-indicator" />
       {text && (
         <Text
           style={[

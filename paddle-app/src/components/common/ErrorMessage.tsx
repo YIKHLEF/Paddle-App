@@ -43,7 +43,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
       };
 
   return (
-    <View style={[containerStyle, style]}>
+    <View style={[containerStyle, style]} testID="error-container">
       <Icon name={icon} size={64} color={theme.colors.error} />
 
       <Text

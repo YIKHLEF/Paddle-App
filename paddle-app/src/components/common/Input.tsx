@@ -85,6 +85,7 @@ export const Input: React.FC<InputProps> = ({
             size={20}
             color={error ? theme.colors.error : theme.colors.textSecondary}
             style={{ marginRight: theme.spacing.sm }}
+            testID="input-left-icon"
           />
         )}
 
@@ -108,7 +109,7 @@ export const Input: React.FC<InputProps> = ({
 
         {/* Right Icon or Password Toggle */}
         {secureTextEntry ? (
-          <TouchableOpacity onPress={handleTogglePassword}>
+          <TouchableOpacity onPress={handleTogglePassword} testID="password-toggle-button">
             <Icon
               name={isPasswordVisible ? 'eye-off' : 'eye'}
               size={20}
@@ -121,6 +122,7 @@ export const Input: React.FC<InputProps> = ({
               name={rightIcon}
               size={20}
               color={error ? theme.colors.error : theme.colors.textSecondary}
+              testID="input-right-icon"
             />
           </TouchableOpacity>
         ) : null}

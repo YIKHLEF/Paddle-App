@@ -146,11 +146,13 @@ export const Button: React.FC<ButtonProps> = ({
       disabled={disabled || loading}
       style={[buttonStyle, style]}
       activeOpacity={0.7}
+      testID="button-container"
     >
       {loading ? (
         <ActivityIndicator
           size="small"
           color={disabled ? theme.colors.textTertiary : variantStyles.textColor}
+          testID="button-loading-indicator"
         />
       ) : (
         <View style={styles.contentContainer}>
@@ -160,6 +162,7 @@ export const Button: React.FC<ButtonProps> = ({
               size={iconSize}
               color={disabled ? theme.colors.textTertiary : variantStyles.textColor}
               style={{ marginRight: theme.spacing.sm }}
+              testID="button-icon"
             />
           )}
           <Text style={[buttonTextStyle, textStyle]}>{title}</Text>
@@ -169,6 +172,7 @@ export const Button: React.FC<ButtonProps> = ({
               size={iconSize}
               color={disabled ? theme.colors.textTertiary : variantStyles.textColor}
               style={{ marginLeft: theme.spacing.sm }}
+              testID="button-icon"
             />
           )}
         </View>

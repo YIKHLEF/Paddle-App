@@ -170,6 +170,7 @@ export const Avatar: React.FC<AvatarProps> = ({
             },
             getBadgePosition(),
           ]}
+          testID="avatar-badge"
         />
       )}
     </View>
