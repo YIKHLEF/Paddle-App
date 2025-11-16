@@ -7,12 +7,12 @@ This document provides comprehensive guidance for AI assistants working on the P
 **Project Name:** Paddle-App
 **Purpose:** Mobile application for paddle/padel players - Find partners, book courts, track performance
 **Type:** React Native Mobile App (iOS/Android) + Node.js Backend API
-**Status:** ✅ Development - Sprint 2 in progress (Geolocation & Maps Complete!)
-**Version:** 1.5.0
+**Status:** ✅ Development - Sprint 2 COMPLETE! Tournament System operational!
+**Version:** 1.8.0
 **Tech Stack:** React Native 0.74, TypeScript, Node.js 20, PostgreSQL, Prisma, Redux Toolkit, Stripe, Firebase, Socket.io
 **Business Model:** Freemium with subscriptions (Standard: 9.99€/month, Premium: 14.99€/month)
 
-## 🆕 Recent Updates (v1.5.0 - Sprint 2: Geolocation & Maps!)
+## 🆕 Recent Updates (v1.8.0 - Sprint 2: Tournament System COMPLETE!)
 
 ### ✅ New Features Implemented:
 
@@ -93,15 +93,15 @@ This document provides comprehensive guidance for AI assistants working on the P
 - ✅ User location tracking and updates
 - ✅ Geographic statistics and insights
 
-**Progress:** Sprint 1 Complete + Sprint 2 (2/5 completed)
+**Progress:** Sprint 1 Complete + Sprint 2 COMPLETE! (5/5 features)
 - ✅ **Sprint 1:** All 6 features complete (100%)
 - ✅ **Sprint 2:** Real-time Chat (100%)
 - ✅ **Sprint 2:** Geolocation & Maps (100%)
-- ⏳ Complete Match Management (0%)
-- ⏳ Complete Booking System (0%)
-- ⏳ Tournament System (0%)
+- ✅ **Sprint 2:** Complete Match Management (100%)
+- ✅ **Sprint 2:** Complete Booking System (100%)
+- ✅ **Sprint 2:** Tournament System (100%) ⬅️ NOUVEAU!
 
-**Completion:** ~65-70% of MVP completed (Location-based discovery operational!)
+**Completion:** ~90-95% of MVP completed (All core systems operational!)
 
 ## Project Structure
 
@@ -3276,7 +3276,973 @@ function NearbyMatchesScreen() {
 
 ---
 
+### Complete Booking System Module
+
+**Backend Service (`paddle-api/src/services/booking.service.ts`):**
+Comprehensive court booking management with availability checking, payment integration, and statistics:
+
+**Features:**
+- Full booking lifecycle (create, update, confirm, cancel, complete)
+- Real-time availability checking with conflict detection
+- Automatic price calculation based on court hourly rates
+- Time slot generation (90-minute intervals)
+- Payment integration (Stripe ready)
+- Cancellation policy enforcement (24-hour rule)
+- Automatic refund handling
+- Booking expiration cleanup (30-minute timeout)
+- Auto-completion of past bookings
+- User booking statistics and analytics
+
+**Core Methods:**
+
+**Booking CRUD:**
+- `createBooking(data)` - Create new booking with availability check
+- `getBookingById(bookingId, userId?)` - Get booking details with authorization
+- `searchBookings(filters)` - Advanced search with filters and pagination
+- `getUserBookings(userId, filters?)` - Get user's bookings with status filtering
+- `updateBooking(bookingId, userId, data)` - Modify booking with availability recheck
+- `confirmBooking(bookingId)` - Confirm booking after payment
+- `cancelBooking(bookingId, userId, reason?)` - Cancel with refund policy check
+- `completeBooking(bookingId)` - Mark booking as completed
+
+**Availability Management:**
+- `checkAvailability(courtId, startTime, endTime, excludeBookingId?)` - Check slot availability
+- `getCourtDayAvailability(courtId, date)` - Get all time slots for a day
+- Time slot generation with 90-minute intervals
+- Conflict detection algorithm (checks overlapping bookings)
+- Club opening hours integration
+
+**Analytics & Utilities:**
+- `getUserBookingStatistics(userId)` - Comprehensive user statistics
+- `calculatePrice(pricePerHour, durationMinutes)` - Automatic pricing
+- `cleanupExpiredBookings()` - Remove PENDING bookings after 30 minutes
+- `autoCompleteBookings()` - Mark past bookings as COMPLETED
+
+**Booking Filters:**
+```typescript
+{
+  userId?: string,
+  courtId?: string,
+  clubId?: string,
+  status?: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED',
+  startDate?: Date,
+  endDate?: Date,
+  page?: number,
+  limit?: number,
+}
+```
+
+**Availability System:**
+- **Time Slots:** 90-minute intervals (configurable)
+- **Opening Hours:** Extracted from club.openingHours JSON
+- **Conflict Detection:** 4 overlap scenarios checked:
+  1. New booking starts during existing booking
+  2. New booking ends during existing booking
+  3. New booking completely contains existing booking
+  4. New booking is completely inside existing booking
+
+**Cancellation Policy:**
+- **24+ hours before:** Full refund eligible
+- **Less than 24 hours:** No refund
+- **Status validation:** Cannot cancel CANCELLED or COMPLETED bookings
+- **Automatic cleanup:** PENDING bookings auto-cancelled after 30 minutes
+
+**Statistics Tracking:**
+Per user statistics include:
+- Total bookings count
+- Upcoming bookings (PENDING/CONFIRMED in future)
+- Completed bookings count
+- Cancelled bookings count
+- Total amount spent (paid bookings only)
+- Favorite club (most bookings)
+- Bookings by month (last 6 months with spend)
+
+**Routes (`paddle-api/src/routes/booking.routes.ts`):**
+
+13 REST API endpoints for complete booking management:
+
+```typescript
+POST   /api/bookings                       // Create booking (Private)
+GET    /api/bookings                       // Search bookings (Private, admin)
+GET    /api/bookings/user/me               // Get my bookings (Private)
+GET    /api/bookings/user/upcoming         // Get upcoming bookings (Private)
+GET    /api/bookings/user/statistics       // Get my statistics (Private)
+GET    /api/bookings/:id                   // Get booking details (Private)
+PUT    /api/bookings/:id                   // Update booking (Private)
+POST   /api/bookings/:id/cancel            // Cancel booking (Private)
+DELETE /api/bookings/:id                   // Delete/Cancel booking (Private)
+POST   /api/bookings/:id/confirm           // Confirm booking (Private)
+GET    /api/courts/:courtId/availability   // Get day availability (Public)
+GET    /api/courts/:courtId/availability/week // Get week availability (Public)
+POST   /api/bookings/check-availability    // Check specific slot (Public)
+POST   /api/bookings/cleanup               // Cleanup expired (Cron/Admin)
+```
+
+**Request/Response Examples:**
+
+**Create Booking:**
+```typescript
+POST /api/bookings
+{
+  courtId: 'court-123',
+  startTime: '2025-11-18T14:00:00Z',
+  endTime: '2025-11-18T15:30:00Z',
+  duration: 90,
+  paymentMethod: 'CARD',
+  notes: 'Singles practice'
+}
+```
+
+**Check Availability:**
+```typescript
+GET /api/courts/:courtId/availability?date=2025-11-18
+
+Response: {
+  success: true,
+  availability: {
+    date: '2025-11-18',
+    courtId: 'court-123',
+    court: {
+      id: 'court-123',
+      name: 'Court Central',
+      type: 'INDOOR',
+      pricePerHour: 25
+    },
+    slots: [
+      {
+        startTime: '2025-11-18T08:00:00Z',
+        endTime: '2025-11-18T09:30:00Z',
+        available: true,
+        price: 37.50,
+        bookingId: null
+      },
+      {
+        startTime: '2025-11-18T09:30:00Z',
+        endTime: '2025-11-18T11:00:00Z',
+        available: false,
+        price: 37.50,
+        bookingId: 'booking-456'
+      },
+      // ... more slots
+    ],
+    openingHour: 8,
+    closingHour: 22
+  }
+}
+```
+
+**Get Statistics:**
+```typescript
+GET /api/bookings/user/statistics
+
+Response: {
+  success: true,
+  statistics: {
+    totalBookings: 45,
+    upcomingBookings: 3,
+    completedBookings: 38,
+    cancelledBookings: 4,
+    totalSpent: 1125.50,
+    favoriteClub: {
+      id: 'club-789',
+      name: 'Padel Center Paris',
+      bookingCount: 28
+    },
+    bookingsByMonth: [
+      { month: 'novembre 2025', count: 8, spent: 200 },
+      { month: 'octobre 2025', count: 12, spent: 300 },
+      // ... last 6 months
+    ]
+  }
+}
+```
+
+**Frontend Hook (`paddle-app/src/hooks/useBooking.ts`):**
+React hook for comprehensive booking management:
+
+**State:**
+- `bookings` - Current booking list
+- `currentBooking` - Selected booking details
+- `statistics` - User booking statistics
+- `pagination` - Pagination info
+- `loading` - Data loading state
+- `actionLoading` - Action in progress state
+- `error` - Error message
+
+**Methods:**
+
+**Booking Operations:**
+- `createBooking(data)` - Create new booking with validation
+- `loadBookingById(bookingId)` - Load specific booking
+- `updateBooking(bookingId, data)` - Modify booking
+- `cancelBooking(bookingId)` - Cancel booking
+
+**Data Loading:**
+- `loadMyBookings(filters?)` - Load user bookings with filters
+- `loadUpcomingBookings(page?, limit?)` - Load future bookings
+- `loadStatistics()` - Load user statistics
+- `checkAvailability(courtId, date)` - Check court availability
+- `loadMore(filters?)` - Load next page
+
+**Utilities:**
+- `refresh(filters?)` - Refresh booking list
+- `reset()` - Reset all state
+
+**Helpers:**
+- `hasMore` - Boolean, more pages available
+- `isEmpty` - Boolean, no bookings
+- `upcomingCount` - Number of upcoming bookings
+
+**Usage Example:**
+
+```typescript
+import { useBooking } from '@/hooks/useBooking';
+
+function BookingScreen() {
+  const {
+    bookings,
+    loading,
+    error,
+    createBooking,
+    loadUpcomingBookings,
+    cancelBooking,
+    checkAvailability,
+    upcomingCount,
+  } = useBooking(true); // Auto-load on mount
+
+  useEffect(() => {
+    loadUpcomingBookings();
+  }, []);
+
+  const handleCreateBooking = async () => {
+    const booking = await createBooking({
+      courtId: 'court-123',
+      date: '2025-11-18',
+      startTime: '14:00',
+      endTime: '15:30',
+      paymentMethod: 'CARD',
+    });
+
+    if (booking) {
+      Alert.alert('Success', 'Booking created!');
+      navigation.navigate('BookingDetails', { bookingId: booking.id });
+    }
+  };
+
+  const handleCheckAvailability = async () => {
+    const availability = await checkAvailability('court-123', '2025-11-18');
+
+    if (availability) {
+      const availableSlots = availability.slots.filter(s => s.available);
+      console.log(`${availableSlots.length} slots available`);
+    }
+  };
+
+  const handleCancel = async (bookingId: string) => {
+    Alert.alert(
+      'Confirm Cancellation',
+      'Are you sure you want to cancel this booking?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes',
+          onPress: async () => {
+            const success = await cancelBooking(bookingId);
+            if (success) {
+              Alert.alert('Cancelled', 'Booking cancelled successfully');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  return (
+    <View>
+      <Text>You have {upcomingCount} upcoming bookings</Text>
+
+      <FlatList
+        data={bookings}
+        renderItem={({ item }) => (
+          <BookingCard
+            booking={item}
+            onPress={() => navigation.navigate('BookingDetails', { bookingId: item.id })}
+            onCancel={() => handleCancel(item.id)}
+          />
+        )}
+      />
+    </View>
+  );
+}
+```
+
+**Availability Display Example:**
+
+```typescript
+import { useBooking } from '@/hooks/useBooking';
+import { useState } from 'react';
+
+function CourtAvailabilityScreen({ route }) {
+  const { courtId } = route.params;
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [availability, setAvailability] = useState(null);
+  const { checkAvailability, loading } = useBooking();
+
+  useEffect(() => {
+    loadAvailability();
+  }, [selectedDate]);
+
+  const loadAvailability = async () => {
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    const result = await checkAvailability(courtId, dateStr);
+    setAvailability(result);
+  };
+
+  const handleSlotPress = async (slot) => {
+    if (!slot.available) return;
+
+    navigation.navigate('CreateBooking', {
+      courtId,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      price: slot.price,
+    });
+  };
+
+  return (
+    <View>
+      <DatePicker value={selectedDate} onChange={setSelectedDate} />
+
+      {loading ? (
+        <Loading />
+      ) : (
+        <FlatList
+          data={availability?.slots || []}
+          renderItem={({ item: slot }) => (
+            <TimeSlotCard
+              slot={slot}
+              onPress={() => handleSlotPress(slot)}
+              disabled={!slot.available}
+            />
+          )}
+        />
+      )}
+    </View>
+  );
+}
+```
+
+**Integration with Notifications:**
+
+The booking service automatically sends notifications:
+- **Booking confirmed:** `sendBookingConfirmationNotification(userId, clubName, dateTime, bookingId)`
+- **Booking cancelled:** `sendBookingCancellationNotification(userId, clubName, dateTime)`
+
+These integrate with the Firebase Push Notifications module for real-time updates.
+
+**Key Features:**
+
+1. **Complete Booking Lifecycle:**
+   - Creation with real-time availability check
+   - Modification with re-validation
+   - Cancellation with refund policy
+   - Automatic completion for past bookings
+   - Expiration cleanup for unpaid bookings
+
+2. **Smart Availability:**
+   - Time slot generation based on court schedule
+   - Conflict detection across all bookings
+   - Club opening hours integration
+   - 90-minute default slot duration
+   - Visual availability calendar support
+
+3. **Payment Integration:**
+   - Stripe payment intent support (ready)
+   - Multiple payment methods (CARD, CASH, ON_SITE, SUBSCRIPTION)
+   - Automatic refund handling
+   - Payment status tracking
+
+4. **Analytics & Insights:**
+   - Total bookings and spending
+   - Favorite club identification
+   - Monthly booking trends
+   - Upcoming vs completed tracking
+   - Cancellation rate monitoring
+
+5. **Security & Validation:**
+   - User authorization checks
+   - Status-based permissions
+   - Input validation (dates, times, durations)
+   - Price calculation verification
+   - Court availability re-checks
+
+**Best Practices:**
+
+1. Always check availability before showing booking UI
+2. Display clear pricing before user confirms
+3. Show cancellation policy and deadline
+4. Provide visual calendar for availability
+5. Cache availability data (1-5 minute TTL)
+6. Implement optimistic UI updates
+7. Handle payment failures gracefully
+8. Show remaining time for PENDING bookings
+9. Confirm cancellations with users
+10. Display booking history with filters
+
+**Cron Jobs:**
+
+For production deployment, schedule these tasks:
+
+```bash
+# Every 5 minutes - cleanup expired PENDING bookings
+*/5 * * * * curl -X POST https://api.paddle-app.com/api/bookings/cleanup
+
+# Every hour - auto-complete past bookings
+0 * * * * curl -X POST https://api.paddle-app.com/api/bookings/cleanup
+```
+
+This ensures:
+- Abandoned bookings (unpaid) don't block slots
+- Past bookings are marked as completed
+- Statistics remain accurate
+
+---
+
+### Tournament System Module
+
+**Backend Service (`paddle-api/src/services/tournament.service.ts`):**
+Comprehensive tournament management with bracket generation, participant registration, and match tracking:
+
+**Features:**
+- Full tournament lifecycle (create, register, start, play, complete)
+- Three tournament types (Single Elimination, Double Elimination, Round Robin)
+- Three formats (Singles, Doubles, Mixed Doubles)
+- Automatic bracket generation with intelligent seeding
+- Participant registration with skill level validation
+- Match scheduling and result tracking
+- Winner progression through bracket
+- Automatic champion determination
+- Tournament statistics and rankings
+
+**Tournament Types:**
+
+1. **Single Elimination (élimination directe):**
+   - One loss and you're out
+   - Fast tournament format
+   - Bracket auto-generates with byes for odd numbers
+   - Winner progresses to next round
+   - Final match determines champion
+
+2. **Double Elimination (double élimination):**
+   - Two losses to be eliminated
+   - Winner's bracket and Loser's bracket
+   - More forgiving format
+   - Longer tournament duration
+
+3. **Round Robin (poule unique):**
+   - Every player plays every other player
+   - Points-based ranking
+   - Fair but time-consuming
+   - Best for small groups (4-8 players)
+
+**Core Methods:**
+
+**Tournament CRUD:**
+- `createTournament(data)` - Create new tournament in DRAFT status
+- `getTournamentById(tournamentId)` - Get tournament details with participants
+- `searchTournaments(filters)` - Search with multiple filters
+- `getUserTournaments(userId)` - Get user's tournament history
+
+**Registration Management:**
+- `openRegistration(tournamentId, organizerId)` - Open registration period
+- `registerParticipant(tournamentId, userId)` - Register for tournament
+- `unregisterParticipant(tournamentId, userId)` - Withdraw registration
+- Validation: Max participants, skill level, registration deadline
+
+**Bracket Generation:**
+- `startTournament(tournamentId, organizerId)` - Start and generate bracket
+- `generateSingleEliminationBracket(participants, tournamentId)` - Create SE bracket
+- `generateDoubleEliminationBracket(participants, tournamentId)` - Create DE bracket
+- `generateRoundRobinBracket(participants, tournamentId)` - Create RR bracket
+- Automatic bye assignment for odd participant counts
+- Smart round calculation (log2 for elimination)
+
+**Match Management:**
+- `getTournamentMatches(tournamentId)` - Get all matches organized by round
+- `recordMatchResult(matchId, winnerId, score, organizerId)` - Record result
+- `advanceWinner(nextMatchId, winnerId, previousMatchNumber)` - Progress winner
+- `checkTournamentCompletion(tournamentId)` - Auto-complete tournament
+
+**Tournament Status Flow:**
+```
+DRAFT → REGISTRATION_OPEN → REGISTRATION_CLOSED → IN_PROGRESS → COMPLETED
+                                                                     ↓
+                                                                CANCELLED
+```
+
+**Bracket Structure:**
+
+Single Elimination example (8 players):
+```
+Round 1 (4 matches)    Round 2 (2 matches)    Finals (1 match)
+P1 vs P2 ─────┐
+              ├──→ W1 vs W2 ─────┐
+P3 vs P4 ─────┘                  │
+                                  ├──→ Champion
+P5 vs P6 ─────┐                  │
+              ├──→ W3 vs W4 ─────┘
+P7 vs P8 ─────┘
+```
+
+**Routes (`paddle-api/src/routes/tournament.routes.ts`):**
+
+10 REST API endpoints for complete tournament management:
+
+```typescript
+POST   /api/tournaments                          // Create tournament (Private)
+GET    /api/tournaments/search                   // Search tournaments (Public)
+GET    /api/tournaments/:id                      // Get tournament details (Public)
+POST   /api/tournaments/:id/open-registration    // Open registration (Private, organizer)
+POST   /api/tournaments/:id/register             // Register participant (Private)
+POST   /api/tournaments/:id/unregister           // Unregister participant (Private)
+POST   /api/tournaments/:id/start                // Start & generate bracket (Private, organizer)
+GET    /api/tournaments/:id/matches              // Get matches/bracket (Public)
+POST   /api/tournaments/matches/:matchId/result  // Record match result (Private, organizer)
+GET    /api/tournaments/user/me                  // Get my tournaments (Private)
+GET    /api/tournaments/types                    // List types & formats (Public)
+```
+
+**Request/Response Examples:**
+
+**Create Tournament:**
+```typescript
+POST /api/tournaments
+{
+  name: "Summer Padel Championship 2025",
+  description: "Annual summer tournament",
+  clubId: "club-123",
+  type: "SINGLE_ELIMINATION",
+  format: "DOUBLES",
+  startDate: "2025-07-15T09:00:00Z",
+  endDate: "2025-07-15T18:00:00Z",
+  registrationDeadline: "2025-07-10T23:59:59Z",
+  maxParticipants: 16,
+  minParticipants: 8,
+  requiredSkillLevel: "INTERMEDIATE",
+  entryFee: 20,
+  prizes: {
+    first: 200,
+    second: 100,
+    third: 50
+  },
+  rules: "Standard FIPT rules apply"
+}
+```
+
+**Search Tournaments:**
+```typescript
+GET /api/tournaments/search?status=REGISTRATION_OPEN&hasSpots=true&format=DOUBLES
+
+Response: {
+  success: true,
+  tournaments: [
+    {
+      id: "tournament-789",
+      name: "Summer Padel Championship 2025",
+      type: "SINGLE_ELIMINATION",
+      format: "DOUBLES",
+      status: "REGISTRATION_OPEN",
+      participantCount: 12,
+      maxParticipants: 16,
+      startDate: "2025-07-15T09:00:00Z",
+      registrationDeadline: "2025-07-10T23:59:59Z",
+      organizer: {
+        id: "user-456",
+        firstName: "Jean",
+        lastName: "Dupont"
+      }
+    }
+  ],
+  pagination: { page: 1, limit: 20, total: 5, totalPages: 1 }
+}
+```
+
+**Get Tournament Bracket:**
+```typescript
+GET /api/tournaments/:id/matches
+
+Response: {
+  success: true,
+  matches: [ /* all matches */ ],
+  rounds: {
+    "1": [
+      {
+        id: "match-r1-1",
+        roundNumber: 1,
+        matchNumber: 1,
+        player1: { id: "p1", firstName: "Alice", lastName: "Smith" },
+        player2: { id: "p2", firstName: "Bob", lastName: "Jones" },
+        status: "COMPLETED",
+        winnerId: "p1",
+        score: { sets: [6, 4] },
+        nextMatchId: "match-r2-1"
+      },
+      // ... more round 1 matches
+    ],
+    "2": [
+      {
+        id: "match-r2-1",
+        roundNumber: 2,
+        matchNumber: 1,
+        player1: { id: "p1", firstName: "Alice", lastName: "Smith" },
+        player2: null, // Waiting for other semi-final
+        status: "SCHEDULED"
+      }
+    ]
+  },
+  totalRounds: 3
+}
+```
+
+**Record Match Result:**
+```typescript
+POST /api/tournaments/matches/:matchId/result
+{
+  winnerId: "p1",
+  score: {
+    sets: [6, 4],
+    team1: 6,
+    team2: 4
+  }
+}
+
+// Automatically:
+// 1. Updates match status to COMPLETED
+// 2. Advances winner to next round
+// 3. Checks if tournament is complete
+// 4. Notifies participants
+```
+
+**Frontend Hook (`paddle-app/src/hooks/useTournament.ts`):**
+React hook for comprehensive tournament management:
+
+**State:**
+- `tournaments` - List of tournaments
+- `currentTournament` - Selected tournament details
+- `matches` - Tournament matches array
+- `rounds` - Matches organized by round number
+- `pagination` - Pagination info
+- `loading` - Data loading state
+- `actionLoading` - Action in progress
+- `error` - Error message
+
+**Methods:**
+
+**Tournament Operations:**
+- `createTournament(data)` - Create new tournament
+- `searchTournaments(filters?)` - Search with filters
+- `loadTournamentById(tournamentId)` - Load specific tournament
+- `loadMyTournaments()` - Load user's tournaments
+
+**Registration:**
+- `openRegistration(tournamentId)` - Open registration (organizer only)
+- `register(tournamentId)` - Register for tournament
+- `unregister(tournamentId)` - Withdraw registration
+
+**Tournament Lifecycle:**
+- `startTournament(tournamentId)` - Start and generate bracket (organizer only)
+- `loadMatches(tournamentId)` - Load bracket/matches
+- `recordMatchResult(matchId, winnerId, score?)` - Record result (organizer only)
+
+**Utilities:**
+- `loadMore(filters?)` - Load next page
+- `refresh(filters?)` - Refresh tournament list
+- `reset()` - Reset all state
+
+**Helpers:**
+- `hasMore` - Boolean, more pages available
+- `isEmpty` - Boolean, no tournaments
+- `totalRounds` - Number of rounds in bracket
+- `isRegistered(tournamentId, userId)` - Check if user registered
+- `hasSpots(tournament)` - Check if tournament has space
+- `canRegister(tournament)` - Check if registration allowed
+
+**Usage Example:**
+
+```typescript
+import { useTournament, TournamentType, TournamentFormat } from '@/hooks/useTournament';
+
+function TournamentScreen() {
+  const {
+    tournaments,
+    currentTournament,
+    matches,
+    rounds,
+    loading,
+    createTournament,
+    register,
+    startTournament,
+    loadMatches,
+    hasSpots,
+    canRegister,
+  } = useTournament(true); // Auto-load on mount
+
+  const handleCreateTournament = async () => {
+    const tournament = await createTournament({
+      name: "Summer Championship",
+      type: TournamentType.SINGLE_ELIMINATION,
+      format: TournamentFormat.DOUBLES,
+      startDate: "2025-07-15T09:00:00Z",
+      endDate: "2025-07-15T18:00:00Z",
+      registrationDeadline: "2025-07-10T23:59:59Z",
+      maxParticipants: 16,
+      entryFee: 20,
+    });
+
+    if (tournament) {
+      navigation.navigate('TournamentDetails', { tournamentId: tournament.id });
+    }
+  };
+
+  const handleRegister = async (tournamentId: string) => {
+    if (!canRegister(currentTournament)) {
+      Alert.alert('Error', 'Registration not available');
+      return;
+    }
+
+    const success = await register(tournamentId);
+    if (success) {
+      Alert.alert('Success', 'You are registered!');
+    }
+  };
+
+  const handleStartTournament = async (tournamentId: string) => {
+    Alert.alert(
+      'Start Tournament',
+      'This will generate the bracket and start the tournament. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Start',
+          onPress: async () => {
+            const success = await startTournament(tournamentId);
+            if (success) {
+              Alert.alert('Success', 'Tournament started!');
+              await loadMatches(tournamentId);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  return (
+    <ScrollView>
+      {/* Tournament List */}
+      <FlatList
+        data={tournaments}
+        renderItem={({ item }) => (
+          <TournamentCard
+            tournament={item}
+            onPress={() => loadTournamentById(item.id)}
+            onRegister={() => handleRegister(item.id)}
+            showRegisterButton={canRegister(item)}
+            spotsAvailable={hasSpots(item)}
+          />
+        )}
+      />
+    </ScrollView>
+  );
+}
+```
+
+**Bracket Display Example:**
+
+```typescript
+import { useTournament } from '@/hooks/useTournament';
+
+function TournamentBracketScreen({ route }) {
+  const { tournamentId } = route.params;
+  const {
+    currentTournament,
+    matches,
+    rounds,
+    totalRounds,
+    loadMatches,
+    recordMatchResult,
+  } = useTournament();
+
+  useEffect(() => {
+    loadMatches(tournamentId);
+  }, [tournamentId]);
+
+  const handleRecordResult = async (matchId: string, winnerId: string) => {
+    const success = await recordMatchResult(matchId, winnerId);
+    if (success) {
+      Alert.alert('Success', 'Result recorded');
+    }
+  };
+
+  return (
+    <ScrollView horizontal>
+      {/* Render each round as a column */}
+      {Object.entries(rounds).map(([roundNumber, roundMatches]) => (
+        <View key={roundNumber} style={styles.roundColumn}>
+          <Text style={styles.roundTitle}>
+            {getRoundName(parseInt(roundNumber), totalRounds)}
+          </Text>
+
+          {roundMatches.map((match) => (
+            <MatchCard
+              key={match.id}
+              match={match}
+              onRecordResult={handleRecordResult}
+              isOrganizer={currentTournament?.organizerId === userId}
+            />
+          ))}
+        </View>
+      ))}
+    </ScrollView>
+  );
+}
+
+function getRoundName(roundNumber: number, totalRounds: number): string {
+  if (roundNumber === totalRounds) return 'Finals';
+  if (roundNumber === totalRounds - 1) return 'Semi-Finals';
+  if (roundNumber === totalRounds - 2) return 'Quarter-Finals';
+  return `Round ${roundNumber}`;
+}
+```
+
+**Integration with Notifications:**
+
+The tournament service automatically sends notifications:
+- **Registration confirmed:** When user registers
+- **Tournament started:** To all participants when bracket generated
+- **Match ready:** When both players are known for a match
+- **Tournament won:** To champion when tournament completes
+
+**Key Features:**
+
+1. **Complete Tournament Lifecycle:**
+   - Creation with flexible configuration
+   - Open/close registration period
+   - Automatic bracket generation
+   - Match progression through rounds
+   - Champion determination
+
+2. **Smart Bracket Generation:**
+   - Single elimination with bye handling
+   - Double elimination (winner/loser brackets)
+   - Round robin (all vs all)
+   - Automatic round calculation
+   - Seeding support
+
+3. **Participant Management:**
+   - Registration with validation
+   - Skill level requirements
+   - Max/min participant limits
+   - Registration deadline enforcement
+   - Waitlist support (future)
+
+4. **Match Tracking:**
+   - Organized by rounds
+   - Winner progression
+   - Score recording
+   - Status tracking
+   - Schedule integration
+
+5. **Security & Validation:**
+   - Organizer-only operations
+   - Participant verification
+   - Status-based permissions
+   - Date validation
+   - Entry fee handling
+
+**Best Practices:**
+
+1. Set realistic participant limits (powers of 2 for SE: 4, 8, 16, 32)
+2. Allow enough time between registration deadline and start date
+3. Clearly communicate tournament rules and format
+4. Use appropriate tournament type for participant count
+5. Validate match results before recording
+6. Notify participants of schedule changes
+7. Handle byes gracefully in UI
+8. Show bracket progression visually
+9. Provide statistics after completion
+10. Archive completed tournaments
+
+**Tournament Type Selection Guide:**
+
+**Single Elimination:**
+- Best for: 8-32 participants
+- Duration: Log2(n) rounds (8 players = 3 rounds)
+- Pros: Fast, clear winner
+- Cons: No second chances
+
+**Double Elimination:**
+- Best for: 8-16 participants
+- Duration: ~2x single elimination
+- Pros: More fair, second chances
+- Cons: Complex bracket, longer
+
+**Round Robin:**
+- Best for: 4-8 participants
+- Duration: n*(n-1)/2 matches (8 players = 28 matches!)
+- Pros: Everyone plays everyone, most fair
+- Cons: Very long for large groups
+
+---
+
 ## Version History
+
+- **v1.8.0** (2025-11-16): Sprint 2 - Tournament System COMPLETE! 🏆
+  - ✅ **Tournament System:** Complete tournament management with bracket generation
+    - Backend tournament service with lifecycle management
+    - 10 REST API endpoints for tournament operations
+    - Three tournament types (Single Elimination, Double Elimination, Round Robin)
+    - Three formats (Singles, Doubles, Mixed Doubles)
+    - Automatic bracket generation with intelligent seeding
+    - Participant registration with skill level validation
+    - Match scheduling and result tracking
+    - Winner progression through bracket
+    - Automatic champion determination
+    - Bye handling for odd participant counts
+    - Round calculation (log2 for elimination, n*(n-1)/2 for round robin)
+    - Match result recording with automatic progression
+    - Tournament completion detection
+    - Notification integration (registration, started, won)
+    - useTournament hook for React integration
+  - **Bracket Generation:** Single elimination, double elimination, round robin with visual ASCII representation
+  - **Registration Flow:** DRAFT → REGISTRATION_OPEN → REGISTRATION_CLOSED → IN_PROGRESS → COMPLETED
+  - **Smart Features:** Seeding support, deadline enforcement, max/min participants, entry fees, prizes
+  - **New Files Added:** 3 files (tournament.service.ts, tournament.routes.ts, useTournament.ts)
+  - **Sprint 2 Status:** ✅ ALL 5 features complete (100%)!
+  - **Completion:** ~90-95% of MVP (all core systems operational!)
+
+- **v1.7.0** (2025-11-16): Sprint 2 - Complete Booking System! 📅
+  - ✅ **Complete Booking System:** Full court reservation management with payment integration
+    - Backend booking service with comprehensive lifecycle management
+    - 13 REST API endpoints for booking operations
+    - Real-time availability checking with conflict detection
+    - Time slot generation (90-minute intervals with club hours)
+    - Automatic price calculation based on court hourly rates
+    - Cancellation policy enforcement (24-hour refund rule)
+    - Payment integration (Stripe ready, multi-method support)
+    - Booking expiration cleanup (30-minute timeout for PENDING)
+    - Auto-completion of past bookings
+    - User booking statistics and analytics
+    - Favorite club identification
+    - Monthly booking trends (last 6 months)
+    - Availability calendar (day and week views)
+    - Conflict detection algorithm (4 overlap scenarios)
+    - useBooking hook for React integration
+  - **Availability System:** Automatic time slot generation, opening hours integration, visual calendar support
+  - **Payment Features:** Multiple payment methods (CARD, CASH, ON_SITE, SUBSCRIPTION), automatic refunds
+  - **Statistics:** Total/upcoming/completed/cancelled bookings, total spent, favorite club, monthly trends
+  - **New Files Added:** 3 files (booking.service.ts, booking.routes.ts, useBooking.ts)
+  - **Sprint 2 Progress:** 4/5 features complete (80%)
+  - **Completion:** ~80-85% of MVP (booking system operational!)
 
 - **v1.6.0** (2025-11-16): Sprint 2 - Match Management Complete! 🎾
   - ✅ **Complete Match Management System:** Full match lifecycle with intelligent recommendations
