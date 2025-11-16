@@ -7,12 +7,12 @@ This document provides comprehensive guidance for AI assistants working on the P
 **Project Name:** Paddle-App
 **Purpose:** Mobile application for paddle/padel players - Find partners, book courts, track performance
 **Type:** React Native Mobile App (iOS/Android) + Node.js Backend API
-**Status:** ✅ Development - MVP in progress (Sprint 1 Payment System Complete)
-**Version:** 1.2.0
-**Tech Stack:** React Native 0.74, TypeScript, Node.js 20, PostgreSQL, Prisma, Redux Toolkit, Stripe
+**Status:** ✅ Development - MVP in progress (Sprint 1 Complete!)
+**Version:** 1.3.0
+**Tech Stack:** React Native 0.74, TypeScript, Node.js 20, PostgreSQL, Prisma, Redux Toolkit, Stripe, Firebase
 **Business Model:** Freemium with subscriptions (Standard: 9.99€/month, Premium: 14.99€/month)
 
-## 🆕 Recent Updates (v1.2.0 - Sprint 1 Payment Complete)
+## 🆕 Recent Updates (v1.3.0 - Sprint 1 Complete!)
 
 ### ✅ New Features Implemented:
 
@@ -42,7 +42,7 @@ This document provides comprehensive guidance for AI assistants working on the P
 - ✅ Purchase restoration
 - ✅ Subscription status tracking
 
-**5. Stripe Payment Integration** ✅ NEW
+**5. Stripe Payment Integration** ✅
 - ✅ Backend Stripe service with full subscription lifecycle (`paddle-api/src/services/stripe.service.ts`)
 - ✅ Subscription routes with 8 endpoints (`paddle-api/src/routes/subscription.routes.ts`)
 - ✅ Frontend Stripe service with Payment Sheet (`paddle-app/src/services/stripe.service.ts`)
@@ -52,15 +52,27 @@ This document provides comprehensive guidance for AI assistants working on the P
 - ✅ 14-day free trial support
 - ✅ Secure payment processing (PCI compliant)
 
-**Progress:** Sprint 1 features (5/6 completed)
+**6. Firebase Push Notifications** ✅ NEW
+- ✅ Backend notification service with Firebase Admin SDK (`paddle-api/src/services/notification.service.ts`)
+- ✅ Notification routes with 5 endpoints (`paddle-api/src/routes/notification.routes.ts`)
+- ✅ Frontend FCM service with multi-platform support (`paddle-app/src/services/notification.service.ts`)
+- ✅ useNotifications hook for easy integration (`paddle-app/src/hooks/useNotifications.ts`)
+- ✅ Device token management with automatic cleanup
+- ✅ Notification templates for common events (messages, matches, bookings, payments)
+- ✅ Android notification channels (default, matches, messages, bookings)
+- ✅ Badge count management (iOS)
+- ✅ Background and foreground notification handling
+- ✅ Deep linking on notification tap
+
+**Progress:** Sprint 1 features (6/6 completed) ✅ COMPLETE!
 - ✅ Social authentication (100%)
 - ✅ Biometric authentication (100%)
 - ✅ Email verification (100%)
 - ✅ Subscription module (100%)
 - ✅ Stripe integration (100%)
-- ⏳ Firebase Push Notifications (0% - pending)
+- ✅ Firebase Push Notifications (100%)
 
-**Completion:** ~50-55% of MVP completed (payment system fully operational)
+**Completion:** ~55-60% of MVP completed (Sprint 1 fully complete!)
 
 ## Project Structure
 
@@ -1938,7 +1950,261 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 
 ---
 
+### Firebase Push Notifications Module
+
+**Backend Service (`paddle-api/src/services/notification.service.ts`):**
+Complete Firebase Cloud Messaging (FCM) integration for push notifications:
+
+**Features:**
+- Firebase Admin SDK integration
+- Device token management
+- Multi-platform support (iOS/Android)
+- Targeted notifications (single user or bulk)
+- Notification templates for common events
+- Automatic token cleanup (invalid tokens)
+- Custom notification data payloads
+- Badge count management
+- Priority and TTL settings
+
+**Core Methods:**
+- `initializeFirebase()` - Initialize Firebase Admin SDK
+- `registerDeviceToken(userId, token, platform)` - Register device for notifications
+- `unregisterDeviceToken(token)` - Remove device token
+- `sendToUser(userId, notification, options)` - Send to specific user
+- `sendToUsers(userIds, notification, options)` - Bulk send to multiple users
+- `sendNewMessageNotification(recipientId, senderName, preview)` - Chat notification
+- `sendMatchInvitationNotification(recipientId, matchTitle, organizer, matchId)` - Match invite
+- `sendMatchReminderNotification(userId, matchTitle, time, matchId)` - Match reminder
+- `sendBookingConfirmationNotification(userId, courtName, dateTime, bookingId)` - Booking confirmed
+- `sendBookingCancellationNotification(userId, courtName, dateTime)` - Booking cancelled
+- `sendTrialEndingNotification(userId, daysRemaining)` - Trial ending soon
+- `sendPaymentSuccessNotification(userId, amount, planName)` - Payment successful
+- `sendPaymentFailureNotification(userId, planName)` - Payment failed
+
+**Routes (`paddle-api/src/routes/notification.routes.ts`):**
+
+All routes require authentication:
+
+```typescript
+POST   /api/notifications/register-token     // Register device token
+POST   /api/notifications/unregister-token   // Remove device token
+POST   /api/notifications/send               // Send custom notification
+POST   /api/notifications/send-bulk          // Send to multiple users
+POST   /api/notifications/test               // Send test notification
+```
+
+**Prisma Schema Updates:**
+
+Added `DeviceToken` model for token management:
+```prisma
+model DeviceToken {
+  id         String   @id @default(uuid())
+  userId     String
+  token      String   @unique
+  platform   Platform // ios or android
+  lastUsedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@map("device_tokens")
+}
+
+enum Platform {
+  ios
+  android
+}
+```
+
+**Frontend Service (`paddle-app/src/services/notification.service.ts`):**
+React Native FCM integration using `@react-native-firebase/messaging` and `@notifee/react-native`:
+
+**Methods:**
+- `initialize()` - Setup FCM, request permissions, register token
+- `requestPermission()` - Request notification permission (iOS/Android 13+)
+- `checkPermission()` - Check if permissions granted
+- `registerTokenOnBackend(token)` - Save token to backend
+- `createNotificationChannel()` - Setup Android notification channels
+- `setupListeners()` - Handle foreground/background/click events
+- `displayNotification(message)` - Show local notification
+- `handleNotificationClick(notification)` - Navigate on tap
+- `disable()` - Unregister and delete token
+- `sendTestNotification()` - Test notification delivery
+- `getBadgeCount()` - Get current badge count (iOS)
+- `setBadgeCount(count)` - Set badge count (iOS)
+- `clearAllNotifications()` - Clear all notifications
+
+**Hook (`paddle-app/src/hooks/useNotifications.ts`):**
+React hook for easy notification management in components:
+
+**Returns:**
+```typescript
+{
+  // State
+  isInitialized: boolean,        // Service initialized
+  hasPermission: boolean,         // Permission granted
+  notificationsEnabled: boolean,  // Redux enabled state
+  loading: boolean,               // Operation in progress
+  badgeCount: number,             // Current badge count
+
+  // Methods
+  checkPermission: () => Promise<boolean>,
+  requestPermission: () => Promise<boolean>,
+  enable: () => Promise<boolean>,
+  disable: () => Promise<boolean>,
+  toggle: () => Promise<boolean>,
+  sendTestNotification: () => Promise<boolean>,
+  updateBadgeCount: () => Promise<void>,
+  setNotificationBadge: (count: number) => Promise<void>,
+  clearAll: () => Promise<void>,
+}
+```
+
+**Usage Example:**
+
+```typescript
+import { useNotifications } from '@/hooks/useNotifications';
+
+function SettingsScreen() {
+  const {
+    notificationsEnabled,
+    hasPermission,
+    enable,
+    disable,
+    sendTestNotification,
+  } = useNotifications();
+
+  const handleToggle = async () => {
+    if (notificationsEnabled) {
+      await disable();
+    } else {
+      await enable();
+    }
+  };
+
+  const handleTest = async () => {
+    const success = await sendTestNotification();
+    if (success) {
+      Alert.alert('Success', 'Test notification sent!');
+    }
+  };
+
+  return (
+    <View>
+      <Switch value={notificationsEnabled} onValueChange={handleToggle} />
+      <Button title="Send Test" onPress={handleTest} />
+    </View>
+  );
+}
+```
+
+**Notification Channels (Android):**
+- **default**: General notifications
+- **matches**: Match invitations and reminders
+- **messages**: Chat messages
+- **bookings**: Booking confirmations and cancellations
+
+All channels use `HIGH` importance and default sound.
+
+**Configuration Required:**
+
+Backend `.env`:
+```env
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+```
+
+Frontend Firebase setup:
+1. **iOS**: Add `GoogleService-Info.plist` to `ios/` folder
+2. **Android**: Add `google-services.json` to `android/app/` folder
+3. **Install dependencies:**
+   ```bash
+   npm install @react-native-firebase/app @react-native-firebase/messaging
+   npm install @notifee/react-native
+   cd ios && pod install
+   ```
+
+**Initialization in App.tsx:**
+
+```typescript
+import { NotificationService } from '@/services/notification.service';
+
+useEffect(() => {
+  // Initialize notifications on app start
+  NotificationService.initialize();
+}, []);
+```
+
+**Backend Initialization (index.ts):**
+
+```typescript
+import { initializeFirebase } from './services/notification.service';
+
+// Initialize Firebase Admin at server startup
+initializeFirebase();
+```
+
+**Notification Flow:**
+
+1. **User enables notifications** → Request permission
+2. **Permission granted** → Get FCM token
+3. **Token obtained** → Register on backend
+4. **Backend event occurs** (new message, match invite, etc.)
+5. **Backend sends via FCM** → User's device(s) receive
+6. **App foreground** → Display local notification
+7. **App background** → System displays notification
+8. **User taps notification** → Navigate to relevant screen
+9. **Token refresh** → Update backend automatically
+10. **Invalid tokens** → Automatically cleaned from database
+
+**Notification Types:**
+- `new_message` → Navigate to chat
+- `match_invitation` → Navigate to match details
+- `match_reminder` → Navigate to match details
+- `booking_confirmed` → Navigate to booking details
+- `booking_cancelled` → Navigate to bookings list
+- `trial_ending` → Navigate to subscription screen
+- `payment_success` → Show success message
+- `payment_failed` → Navigate to payment method
+- `test` → Show test confirmation
+
+**Security:**
+- Device tokens are user-specific
+- Tokens expire and refresh automatically
+- Invalid tokens cleaned up
+- All API routes require authentication
+- Firebase signature verification on backend
+
+**Best Practices:**
+1. Request permission at appropriate time (not immediately on app launch)
+2. Explain value of notifications before requesting
+3. Handle permission denial gracefully
+4. Test on both iOS and Android
+5. Monitor Firebase Console for delivery rates
+6. Keep notification messages concise and actionable
+7. Use rich notifications with images when appropriate
+8. Set badge counts appropriately (iOS)
+9. Clear notifications when user views content
+10. Respect user preferences (mute settings)
+
+---
+
 ## Version History
+
+- **v1.3.0** (2025-11-16): Sprint 1 - COMPLETE! 🎉
+  - ✅ **Firebase Push Notifications:** Complete FCM integration
+    - Backend notification service with Firebase Admin SDK
+    - Device token management with automatic cleanup
+    - 8 notification templates for common events
+    - Frontend FCM service with Notifee for local notifications
+    - useNotifications hook for easy integration
+    - Android notification channels (4 channels)
+    - Badge count management for iOS
+    - Deep linking on notification tap
+  - **New Files Added:** 3 files (notification.service.ts backend, notification.service.ts frontend, useNotifications.ts hook)
+  - **Prisma Schema:** Added DeviceToken model and Platform enum
+  - **Sprint 1 Status:** ✅ 6/6 features complete (100%)
+  - **Completion:** ~55-60% of MVP (critical authentication and payment systems complete)
 
 - **v1.2.0** (2025-11-16): Sprint 1 - Payment Integration Complete
   - ✅ **Stripe Integration:** Complete payment system with webhooks
