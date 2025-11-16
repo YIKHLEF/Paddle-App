@@ -733,13 +733,131 @@ describe('AuthService', () => {
 ```bash
 cd paddle-app
 
-# Unit tests
+# Run all tests
 npm test
+
+# Run tests in watch mode
+npm test -- --watch
+
+# Run specific test file
+npm test -- __tests__/components/Button.test.tsx
+
+# Run tests with coverage
+npm test -- --coverage
 
 # E2E tests (Detox)
 npm run detox:build:ios
 npm run detox:test:ios
 ```
+
+#### Component Tests
+
+All common components have comprehensive test coverage located in `__tests__/components/`:
+
+**Button.test.tsx:**
+- Renders correctly with title
+- Calls onPress when pressed
+- Disabled state prevents onPress
+- Loading state displays ActivityIndicator
+- Supports all variants (primary, secondary, outline, ghost, danger)
+- Supports all sizes (small, medium, large)
+- Renders with icons (left/right)
+- Full width layout
+- Custom styles
+
+**Input.test.tsx:**
+- Renders label and required asterisk
+- Calls onChangeText when text changes
+- Displays error and hint messages
+- Password toggle functionality
+- Renders left/right icons
+- Disabled state
+- Focus/Blur callbacks
+- Form validation
+
+**Card.test.tsx:**
+- Renders children correctly
+- All variants (elevated, outlined, filled)
+- Touchable with onPress
+- CardHeader, CardContent, CardFooter sub-components
+- Complete card with all sections
+
+**Badge.test.tsx:**
+- Renders label correctly
+- All variants (primary, secondary, success, error, warning, info)
+- All sizes (small, medium, large)
+- Icon support
+- SkillBadge with all skill levels
+- SubscriptionBadge with all tiers
+
+**Avatar.test.tsx:**
+- Renders initials when no URI provided
+- All sizes (xs, sm, md, lg, xl, xxl)
+- All variants (circular, rounded, square)
+- Badge display with positioning
+- Correct initial extraction from names
+- AvatarGroup with multiple avatars
+- Max avatars limit with remainder count
+
+**Loading.test.tsx:**
+- Renders loading indicator
+- Text display
+- Fullscreen and inline modes
+
+**ErrorMessage.test.tsx:**
+- Renders error message
+- Retry button functionality
+- Calls onRetry callback
+- Fullscreen mode
+
+#### Test Best Practices
+
+1. **Mock Theme Hook:**
+```typescript
+jest.mock('@/hooks/useTheme', () => ({
+  useTheme: () => ({
+    colors: { /* ... */ },
+    spacing: { /* ... */ },
+    // ... other theme properties
+  }),
+}));
+```
+
+2. **Use TestIDs:**
+All components include `testID` props for reliable testing:
+```typescript
+<Button testID="button-container" />
+<ActivityIndicator testID="button-loading-indicator" />
+<Icon testID="button-icon" />
+```
+
+3. **Test User Interactions:**
+```typescript
+const onPressMock = jest.fn();
+const { getByText } = render(<Button title="Click" onPress={onPressMock} />);
+fireEvent.press(getByText('Click'));
+expect(onPressMock).toHaveBeenCalledTimes(1);
+```
+
+4. **Test Component States:**
+```typescript
+// Test loading state
+render(<Button title="Submit" loading />);
+// Test disabled state
+render(<Button title="Submit" disabled />);
+// Test error state
+render(<Input error="Invalid input" />);
+```
+
+#### Running Tests
+
+To run tests before committing:
+```bash
+cd paddle-app
+npm test -- --coverage --watchAll=false
+```
+
+This ensures all components maintain high test coverage and functionality.
 
 ## Security Checklist
 
@@ -884,6 +1002,10 @@ npx prisma migrate dev
   - Redux store configuration
   - Navigation structure
   - 7 common UI components (Button, Input, Card, Avatar, Loading, ErrorMessage, Badge)
+  - Authentication screens (Onboarding, Login, SignUp, ForgotPassword)
+  - Main screens (Home, Search, Profile)
+  - Comprehensive test suite for all common components
+  - testID props for component testability
 
 ---
 
