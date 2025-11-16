@@ -2821,9 +2821,507 @@ Uses Haversine formula for accurate great-circle distance:
 
 ---
 
+### Complete Match Management Module
+
+**Backend Service (`paddle-api/src/services/match.service.ts`):**
+Comprehensive match management with scoring, statistics, and intelligent recommendations:
+
+**Features:**
+- Full match lifecycle management (create, update, start, complete, cancel)
+- Advanced search with multiple filters
+- Real-time scoring system with set tracking
+- Automatic player statistics updates
+- Smart match recommendations based on multiple factors
+- Match history with pagination
+- Geographic search integration
+- ELO rating system
+- Team management for doubles matches
+
+**Core Methods:**
+
+**Match CRUD:**
+- `createMatch(data)` - Create new match with automatic organizer enrollment
+- `getMatchById(matchId, userId?)` - Get match details with participant status
+- `updateMatch(matchId, userId, data)` - Update match (organizer only)
+- `searchMatches(filters)` - Advanced search with filters and pagination
+
+**Participant Management:**
+- `joinMatch(matchId, userId, team?)` - Join a match with team selection
+- `leaveMatch(matchId, userId)` - Leave a match (except organizer)
+
+**Match Lifecycle:**
+- `startMatch(matchId, userId)` - Start a scheduled match
+- `addSetScore(matchId, userId, score)` - Add score for a set
+- `completeMatch(matchId, userId, data)` - Complete match with final scores
+- `cancelMatch(matchId, userId)` - Cancel a match
+
+**Analytics & Recommendations:**
+- `getUserMatchHistory(userId, filters?)` - Get user's match history
+- `getMatchRecommendations(userId, limit?)` - Smart match suggestions
+
+**Search Filters (`MatchFilters`):**
+```typescript
+{
+  type?: 'FRIENDLY' | 'RANKED' | 'TRAINING' | 'TOURNAMENT' | 'DISCOVERY',
+  format?: 'SINGLES' | 'DOUBLES',
+  status?: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED',
+  skillLevel?: SkillLevel,
+  city?: string,
+  latitude?: number,
+  longitude?: number,
+  radiusKm?: number,
+  startDate?: Date,
+  endDate?: Date,
+  organizerId?: string,
+  hasSpots?: boolean,
+  page?: number,
+  limit?: number,
+}
+```
+
+**Scoring System:**
+- Set-by-set score tracking
+- Automatic winner determination
+- Team scores (1-7 points per set)
+- Support for 1-5 sets
+
+**Statistics Auto-Update:**
+When a match is completed, automatically updates for all participants:
+- Total matches played
+- Matches won/lost
+- Win rate percentage
+- Current win streak
+- Longest win streak
+- Total play time
+- ELO score (K-factor 32)
+
+**Smart Recommendations Algorithm:**
+Matches are scored 0-100 based on:
+
+1. **Skill Level (40 points):**
+   - Perfect match: 40 points
+   - One level difference: 30 points
+   - Two levels difference: 15 points
+
+2. **Distance (30 points):**
+   - ≤ 5km: 30 points
+   - ≤ 10km: 20 points
+   - ≤ 20km: 10 points
+
+3. **Timing (15 points):**
+   - 24-72 hours ahead: 15 points (ideal)
+   - 12-168 hours ahead: 10 points
+
+4. **Available Spots (10 points):**
+   - ≥ 2 spots: 10 points
+   - 1 spot: 5 points
+
+5. **Match Type (5 points):**
+   - FRIENDLY: 5 points
+   - RANKED for experienced players: 5 points
+
+Minimum recommendation score: 30
+
+**Routes (`paddle-api/src/routes/match.routes.ts`):**
+
+14 API endpoints for complete match management:
+
+```typescript
+POST   /api/matches                      // Create match (Private)
+GET    /api/matches/search               // Search matches (Public)
+GET    /api/matches/:id                  // Get match details (Public)
+PUT    /api/matches/:id                  // Update match (Private, organizer)
+POST   /api/matches/:id/join             // Join match (Private)
+POST   /api/matches/:id/leave            // Leave match (Private)
+POST   /api/matches/:id/start            // Start match (Private, organizer)
+POST   /api/matches/:id/score            // Add set score (Private, organizer)
+POST   /api/matches/:id/complete         // Complete match (Private, organizer)
+POST   /api/matches/:id/cancel           // Cancel match (Private, organizer)
+GET    /api/matches/user/history         // Get match history (Private)
+GET    /api/matches/user/recommendations // Get recommendations (Private)
+```
+
+**Request/Response Examples:**
+
+**Create Match:**
+```typescript
+POST /api/matches
+{
+  type: 'FRIENDLY',
+  format: 'DOUBLES',
+  courtId: 'court-123',
+  scheduledAt: '2025-11-18T14:00:00Z',
+  duration: 90,
+  requiredLevel: 'INTERMEDIATE',
+  maxParticipants: 4,
+  description: 'Friendly doubles match',
+  visibility: 'PUBLIC'
+}
+```
+
+**Search Matches:**
+```typescript
+GET /api/matches/search?latitude=48.8566&longitude=2.3522&radiusKm=10&skillLevel=INTERMEDIATE&hasSpots=true&page=1&limit=20
+
+Response: {
+  success: true,
+  matches: [/* array of matches */],
+  pagination: {
+    page: 1,
+    limit: 20,
+    total: 45,
+    totalPages: 3
+  }
+}
+```
+
+**Add Set Score:**
+```typescript
+POST /api/matches/:id/score
+{
+  team1Score: 6,
+  team2Score: 4,
+  setNumber: 1
+}
+```
+
+**Complete Match:**
+```typescript
+POST /api/matches/:id/complete
+{
+  winnerId: 'user-123',
+  scores: [
+    { team1Score: 6, team2Score: 4, setNumber: 1 },
+    { team1Score: 6, team2Score: 3, setNumber: 2 }
+  ]
+}
+```
+
+**Frontend Hook (`paddle-app/src/hooks/useMatch.ts`):**
+React hook for comprehensive match management:
+
+**State:**
+- `matches` - Current search results
+- `currentMatch` - Selected match details
+- `recommendations` - Match recommendations
+- `history` - User's match history
+- `loading` - Loading state
+- `error` - Error message
+- `pagination` - Pagination info
+
+**Methods:**
+
+**Match Operations:**
+- `createMatch(data)` - Create new match
+- `getMatchById(matchId)` - Load match details
+- `updateMatch(matchId, data)` - Update match
+- `joinMatch(matchId, team?)` - Join with team selection
+- `leaveMatch(matchId)` - Leave match
+- `searchMatches(filters?)` - Search with filters
+- `loadMore(filters?)` - Load next page
+
+**Match Lifecycle:**
+- `startMatch(matchId)` - Start the match
+- `addSetScore(matchId, score)` - Add set score
+- `completeMatch(matchId, winnerId?, scores?)` - Complete match
+- `cancelMatch(matchId)` - Cancel match
+
+**Analytics:**
+- `getUserMatchHistory(filters?)` - Load history with filters
+- `getMatchRecommendations(limit?)` - Get smart recommendations
+
+**Utilities:**
+- `reset()` - Reset all state
+
+**Usage Example:**
+
+```typescript
+import { useMatch } from '@/hooks/useMatch';
+
+function MatchScreen() {
+  const {
+    matches,
+    currentMatch,
+    recommendations,
+    loading,
+    error,
+    createMatch,
+    searchMatches,
+    joinMatch,
+    getMatchRecommendations,
+  } = useMatch();
+
+  useEffect(() => {
+    // Load nearby matches
+    searchMatches({
+      latitude: 48.8566,
+      longitude: 2.3522,
+      radiusKm: 10,
+      skillLevel: 'INTERMEDIATE',
+      hasSpots: true,
+    });
+
+    // Load recommendations
+    getMatchRecommendations(10);
+  }, []);
+
+  const handleCreateMatch = async () => {
+    try {
+      const match = await createMatch({
+        type: 'FRIENDLY',
+        format: 'DOUBLES',
+        courtId: 'court-123',
+        scheduledAt: new Date('2025-11-18T14:00:00Z'),
+        requiredLevel: 'INTERMEDIATE',
+      });
+      navigation.navigate('MatchDetails', { matchId: match.id });
+    } catch (err) {
+      console.error('Failed to create match:', err);
+    }
+  };
+
+  const handleJoinMatch = async (matchId: string) => {
+    const success = await joinMatch(matchId, 1); // Team 1
+    if (success) {
+      Alert.alert('Success', 'You joined the match!');
+    }
+  };
+
+  return (
+    <ScrollView>
+      {/* Recommendations */}
+      <Section title="Recommended for You">
+        {recommendations.map((rec) => {
+          const match = matches.find((m) => m.id === rec.matchId);
+          return match ? (
+            <MatchCard
+              key={match.id}
+              match={match}
+              recommendationScore={rec.score}
+              reasons={rec.reasons}
+              onPress={() => navigation.navigate('MatchDetails', { matchId: match.id })}
+              onJoinPress={() => handleJoinMatch(match.id)}
+            />
+          ) : null;
+        })}
+      </Section>
+
+      {/* Search Results */}
+      <Section title="Nearby Matches">
+        {matches.map((match) => (
+          <MatchCard
+            key={match.id}
+            match={match}
+            onPress={() => navigation.navigate('MatchDetails', { matchId: match.id })}
+            onJoinPress={() => handleJoinMatch(match.id)}
+          />
+        ))}
+      </Section>
+    </ScrollView>
+  );
+}
+```
+
+**Scoring Flow Example:**
+
+```typescript
+import { useMatch } from '@/hooks/useMatch';
+
+function MatchScoringScreen({ route }) {
+  const { matchId } = route.params;
+  const { currentMatch, startMatch, addSetScore, completeMatch } = useMatch();
+  const [currentSet, setCurrentSet] = useState(1);
+  const [team1Score, setTeam1Score] = useState(0);
+  const [team2Score, setTeam2Score] = useState(0);
+
+  const handleStartMatch = async () => {
+    await startMatch(matchId);
+  };
+
+  const handleAddSet = async () => {
+    const success = await addSetScore(matchId, {
+      team1Score,
+      team2Score,
+      setNumber: currentSet,
+    });
+
+    if (success) {
+      setCurrentSet(currentSet + 1);
+      setTeam1Score(0);
+      setTeam2Score(0);
+    }
+  };
+
+  const handleCompleteMatch = async (winnerId: string) => {
+    await completeMatch(matchId, winnerId, currentMatch?.scores);
+    navigation.goBack();
+  };
+
+  return (
+    <View>
+      {currentMatch?.status === 'SCHEDULED' && (
+        <Button title="Start Match" onPress={handleStartMatch} />
+      )}
+
+      {currentMatch?.status === 'IN_PROGRESS' && (
+        <>
+          <Text>Set {currentSet}</Text>
+          <ScoreInput
+            label="Team 1"
+            value={team1Score}
+            onChangeValue={setTeam1Score}
+          />
+          <ScoreInput
+            label="Team 2"
+            value={team2Score}
+            onChangeValue={setTeam2Score}
+          />
+          <Button title="Add Set" onPress={handleAddSet} />
+          <Button
+            title="Complete Match"
+            onPress={() => handleCompleteMatch(determineWinner())}
+          />
+        </>
+      )}
+    </View>
+  );
+}
+```
+
+**Integration with Geolocation:**
+
+```typescript
+import { useMatch } from '@/hooks/useMatch';
+import { useGeolocation } from '@/hooks/useGeolocation';
+
+function NearbyMatchesScreen() {
+  const { location } = useGeolocation();
+  const { matches, searchMatches } = useMatch();
+
+  useEffect(() => {
+    if (location) {
+      searchMatches({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        radiusKm: 15,
+        skillLevel: userSkillLevel,
+        hasSpots: true,
+      });
+    }
+  }, [location]);
+
+  return (
+    <FlatList
+      data={matches}
+      renderItem={({ item }) => (
+        <MatchCard
+          match={item}
+          distance={item.distance}
+          onPress={() => handleMatchPress(item)}
+        />
+      )}
+    />
+  );
+}
+```
+
+**Key Features:**
+
+1. **Complete Match Lifecycle:**
+   - Creation with validation
+   - Participant management
+   - Real-time status updates
+   - Scoring system
+   - Automatic statistics
+
+2. **Smart Search:**
+   - Multiple filter combinations
+   - Geographic search integration
+   - Available spots filtering
+   - Skill level matching
+   - Date range filtering
+
+3. **Intelligent Recommendations:**
+   - Multi-factor scoring algorithm
+   - Personalized suggestions
+   - Explanatory reasons
+   - Configurable result count
+
+4. **Robust Statistics:**
+   - Automatic updates on match completion
+   - Win/loss tracking
+   - Streak calculations
+   - ELO rating system
+   - Play time accumulation
+
+5. **Security & Validation:**
+   - Organizer-only operations
+   - Participant verification
+   - Status-based permissions
+   - Input validation
+   - Error handling
+
+**Best Practices:**
+
+1. Always check match status before operations
+2. Handle permission errors gracefully
+3. Validate team assignments for doubles
+4. Show clear match state to users
+5. Provide feedback during async operations
+6. Cache match data to reduce API calls
+7. Use pagination for large result sets
+8. Display recommendation reasons to users
+9. Confirm destructive actions (cancel, leave)
+10. Update local state after successful operations
+
+---
+
 ## Version History
 
-- **v1.4.0** (2025-11-16): Sprint 2 - Real-time Chat Complete!
+- **v1.6.0** (2025-11-16): Sprint 2 - Match Management Complete! 🎾
+  - ✅ **Complete Match Management System:** Full match lifecycle with intelligent recommendations
+    - Backend match service with comprehensive CRUD operations
+    - 14 REST API endpoints for match management
+    - Advanced search with 10+ filter combinations
+    - Real-time scoring system with set-by-set tracking
+    - Automatic player statistics updates (win/loss, ELO, streaks)
+    - Smart match recommendations (multi-factor scoring algorithm)
+    - Match history with pagination
+    - Geographic search integration (location-aware matching)
+    - Team management for doubles matches
+    - Match status lifecycle (SCHEDULED → IN_PROGRESS → COMPLETED)
+    - Organizer-only operations (start, score, complete, cancel)
+    - Participant management (join/leave with team selection)
+    - useMatch hook for React integration
+  - **Recommendation Algorithm:** 5-factor scoring (skill level 40pts, distance 30pts, timing 15pts, spots 10pts, type 5pts)
+  - **Statistics Tracking:** Auto-updates total matches, win rate, streaks, play time, ELO score
+  - **New Files Added:** 3 files (match.service.ts, match.routes.ts, useMatch.ts)
+  - **Sprint 2 Progress:** 3/5 features complete (60%)
+  - **Completion:** ~70-75% of MVP (core match management operational!)
+
+- **v1.5.0** (2025-11-16): Sprint 2 - Geolocation & Maps Complete! 📍
+  - ✅ **Geolocation & Maps Module:** Complete location-based features
+    - GeolocationService with permission handling and distance calculations
+    - useGeolocation hook with auto-permission checking
+    - MapView component with Google Maps integration
+    - CourtMapView specialized component for court display
+    - Backend location service with geographic search
+    - 6 location-based API endpoints (nearby players/clubs/courts/matches)
+    - Bounding box optimization for database queries
+    - Haversine formula for accurate distance calculations
+    - Real-time location tracking with watch position
+    - Radius filtering and sorting by distance
+    - Map markers with color coding (Indoor/Outdoor)
+    - User location display on map
+    - Radius circle visualization
+    - Automatic map bounds fitting
+  - **Search Features:** Skill level filtering, court type filtering, availability filtering, distance sorting
+  - **Performance:** Bounding box pre-filtering reduces DB load significantly
+  - **New Files Added:** 6 files (geolocation.service.ts, useGeolocation.ts, MapView.tsx, CourtMapView.tsx, location.service.ts, location.routes.ts)
+  - **Sprint 2 Progress:** 2/5 features complete (40%)
+  - **Completion:** ~65-70% of MVP (location-based discovery operational!)
+
+- **v1.4.0** (2025-11-16): Sprint 2 - Real-time Chat Complete! 💬
   - ✅ **Real-time Chat with Socket.io:** Complete messaging system
     - Backend Socket.io configuration with JWT authentication
     - Chat service backend for conversation management
@@ -2838,7 +3336,7 @@ Uses Haversine formula for accurate great-circle distance:
     - Conversation muting and deletion
     - Unread count tracking
     - Match chat support for in-game communication
-  - **New Files Added:** 4 files (socket.config.ts, chat.service.ts backend, chat.routes.ts, chat.service.ts frontend, useChat.ts)
+  - **New Files Added:** 5 files (socket.config.ts, chat.service.ts backend, chat.routes.ts, chat.service.ts frontend, useChat.ts)
   - **Sprint 2 Progress:** 1/5 features complete (20%)
   - **Completion:** ~60-65% of MVP (real-time engagement features operational!)
 
