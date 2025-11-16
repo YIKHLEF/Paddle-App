@@ -4,23 +4,20 @@
 
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { View, Text, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/hooks/useTheme';
 import type { MainTabParamList } from './types';
+import { HomeScreen } from '@/screens/home';
+import { SearchScreen } from '@/screens/search';
+import { ProfileScreen } from '@/screens/profile';
 
-// Import des écrans (à créer)
-// import HomeScreen from '@/screens/home/HomeScreen';
-// import SearchScreen from '@/screens/search/SearchScreen';
-// import MatchesScreen from '@/screens/matches/MatchesScreen';
-// import ProfileScreen from '@/screens/profile/ProfileScreen';
-// import MoreScreen from '@/screens/more/MoreScreen';
-
-// Placeholder screens temporaires
-import { View, Text, StyleSheet } from 'react-native';
+// Placeholder pour les écrans non encore implémentés
 
 const PlaceholderScreen = ({ title }: { title: string }) => (
   <View style={styles.container}>
     <Text style={styles.text}>{title}</Text>
+    <Text style={styles.subtitle}>À venir...</Text>
   </View>
 );
 
@@ -52,27 +49,25 @@ const MainNavigator = () => {
     >
       <Tab.Screen
         name="Home"
+        component={HomeScreen}
         options={{
           tabBarLabel: 'Accueil',
           tabBarIcon: ({ color, size }) => (
             <Icon name="home-variant" size={size} color={color} />
           ),
         }}
-      >
-        {() => <PlaceholderScreen title="Accueil" />}
-      </Tab.Screen>
+      />
 
       <Tab.Screen
         name="Search"
+        component={SearchScreen}
         options={{
           tabBarLabel: 'Rechercher',
           tabBarIcon: ({ color, size }) => (
             <Icon name="magnify" size={size} color={color} />
           ),
         }}
-      >
-        {() => <PlaceholderScreen title="Rechercher" />}
-      </Tab.Screen>
+      />
 
       <Tab.Screen
         name="Matches"
@@ -88,15 +83,14 @@ const MainNavigator = () => {
 
       <Tab.Screen
         name="Profile"
+        component={ProfileScreen}
         options={{
           tabBarLabel: 'Profil',
           tabBarIcon: ({ color, size }) => (
             <Icon name="account" size={size} color={color} />
           ),
         }}
-      >
-        {() => <PlaceholderScreen title="Profil" />}
-      </Tab.Screen>
+      />
 
       <Tab.Screen
         name="More"
@@ -124,6 +118,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#2C3E50',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#7F8C8D',
   },
 });
 
