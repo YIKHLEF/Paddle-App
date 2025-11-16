@@ -383,6 +383,232 @@ RootNavigator
     └── More
 ```
 
+## Common Components Library
+
+All components are located in `paddle-app/src/components/common/` and can be imported using the barrel export:
+
+```typescript
+import { Button, Input, Card, Avatar, Loading, ErrorMessage, Badge } from '@/components/common';
+```
+
+### Available Components
+
+#### 1. Button (`Button.tsx`)
+A comprehensive button component with multiple variants and states.
+
+**Props:**
+- `variant`: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
+- `size`: 'small' | 'medium' | 'large'
+- `loading`: boolean - Shows loading indicator
+- `disabled`: boolean
+- `icon`: string - MaterialCommunityIcons name
+- `iconPosition`: 'left' | 'right'
+- `fullWidth`: boolean
+
+**Example:**
+```typescript
+<Button
+  title="Sign In"
+  onPress={handleLogin}
+  variant="primary"
+  size="large"
+  loading={isLoading}
+  icon="login"
+  iconPosition="left"
+  fullWidth
+/>
+```
+
+#### 2. Input (`Input.tsx`)
+Feature-rich text input with validation, icons, and password toggle.
+
+**Props:**
+- `label`: string - Input label
+- `value`: string
+- `onChangeText`: (text: string) => void
+- `error`: string - Error message to display
+- `hint`: string - Helper text
+- `leftIcon`: string - Icon on the left
+- `rightIcon`: string - Icon on the right
+- `secureTextEntry`: boolean - Password mode
+- `required`: boolean - Shows asterisk
+- `disabled`: boolean
+- All standard TextInput props
+
+**Example:**
+```typescript
+<Input
+  label="Email"
+  value={email}
+  onChangeText={setEmail}
+  leftIcon="email"
+  error={emailError}
+  required
+  autoCapitalize="none"
+  keyboardType="email-address"
+/>
+
+<Input
+  label="Password"
+  value={password}
+  onChangeText={setPassword}
+  leftIcon="lock"
+  secureTextEntry
+  required
+/>
+```
+
+#### 3. Card (`Card.tsx`)
+Flexible container component with header, content, and footer.
+
+**Main Component Props:**
+- `variant`: 'elevated' | 'outlined' | 'filled'
+- `padding`: 'none' | 'small' | 'medium' | 'large'
+- `onPress`: () => void - Makes card touchable
+- `children`: ReactNode
+
+**Sub-components:** `CardHeader`, `CardContent`, `CardFooter`
+
+**Example:**
+```typescript
+<Card variant="elevated" onPress={() => navigation.navigate('Details')}>
+  <CardHeader>
+    <Text style={styles.title}>Match Title</Text>
+  </CardHeader>
+  <CardContent>
+    <Text>Match details go here...</Text>
+  </CardContent>
+  <CardFooter>
+    <Button title="Join Match" onPress={handleJoin} />
+  </CardFooter>
+</Card>
+```
+
+#### 4. Avatar (`Avatar.tsx`)
+Avatar component with image, initials fallback, badges, and group support.
+
+**Avatar Props:**
+- `uri`: string - Image URL
+- `name`: string - For initials fallback
+- `size`: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl'
+- `variant`: 'circular' | 'rounded' | 'square'
+- `badge`: boolean - Show badge
+- `badgeColor`: string
+- `badgePosition`: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
+- `onPress`: () => void
+
+**AvatarGroup Props:**
+- `avatars`: Array of avatar data
+- `max`: number - Max avatars to show
+- `size`: Avatar size
+- `spacing`: number - Overlap spacing
+
+**Example:**
+```typescript
+<Avatar
+  uri="https://example.com/avatar.jpg"
+  name="John Doe"
+  size="lg"
+  variant="circular"
+  badge
+  badgeColor={theme.colors.success}
+  onPress={() => navigation.navigate('Profile')}
+/>
+
+<AvatarGroup
+  avatars={[
+    { uri: 'url1', name: 'User 1' },
+    { uri: 'url2', name: 'User 2' },
+    { uri: 'url3', name: 'User 3' },
+  ]}
+  max={3}
+  size="md"
+/>
+```
+
+#### 5. Loading (`Loading.tsx`)
+Loading indicator for async operations.
+
+**Props:**
+- `fullscreen`: boolean - Overlay mode
+- `text`: string - Loading message
+- `size`: 'small' | 'large'
+- `color`: string
+
+**Example:**
+```typescript
+// Fullscreen loading
+<Loading fullscreen text="Loading matches..." />
+
+// Inline loading
+<Loading size="small" />
+```
+
+#### 6. ErrorMessage (`ErrorMessage.tsx`)
+Error display component with retry functionality.
+
+**Props:**
+- `message`: string - Error message
+- `onRetry`: () => void - Retry callback
+- `fullscreen`: boolean - Overlay mode
+
+**Example:**
+```typescript
+<ErrorMessage
+  message="Failed to load matches"
+  onRetry={refetch}
+/>
+
+// Fullscreen error
+<ErrorMessage
+  message="Something went wrong"
+  onRetry={handleRetry}
+  fullscreen
+/>
+```
+
+#### 7. Badge (`Badge.tsx`)
+Colored badge with specialized variants for skills and subscriptions.
+
+**Badge Props:**
+- `label`: string
+- `variant`: 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' | 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'pro'
+- `size`: 'small' | 'medium' | 'large'
+- `icon`: string - MaterialCommunityIcons name
+
+**Specialized Components:**
+- `SkillBadge`: For skill levels (BEGINNER, INTERMEDIATE, ADVANCED, EXPERT, PRO)
+- `SubscriptionBadge`: For subscription tiers (FREE, STANDARD, PREMIUM)
+
+**Example:**
+```typescript
+<Badge label="Active" variant="success" size="small" />
+
+<SkillBadge level="ADVANCED" size="medium" />
+
+<SubscriptionBadge tier="PREMIUM" size="small" />
+```
+
+### Component Guidelines
+
+1. **Theme Integration:** All components use `useTheme()` hook for consistent styling
+2. **TypeScript:** Full type safety with strict interfaces
+3. **Customization:** Support style overrides via `style` prop
+4. **Accessibility:** Include accessibility labels where appropriate
+5. **Performance:** Optimized with React.memo where needed
+6. **Icons:** Use MaterialCommunityIcons for consistency
+
+### Creating New Components
+
+When adding new common components:
+
+1. Create in `paddle-app/src/components/common/`
+2. Use TypeScript with strict typing
+3. Integrate with theme system via `useTheme()`
+4. Add to barrel export in `index.ts`
+5. Document in this CLAUDE.md file
+6. Follow existing naming conventions
+
 ## Common Patterns
 
 ### API Service Pattern
@@ -657,6 +883,7 @@ npx prisma migrate dev
   - Design system
   - Redux store configuration
   - Navigation structure
+  - 7 common UI components (Button, Input, Card, Avatar, Loading, ErrorMessage, Badge)
 
 ---
 
