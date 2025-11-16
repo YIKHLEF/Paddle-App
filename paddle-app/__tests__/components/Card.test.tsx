@@ -6,31 +6,11 @@ import React from 'react';
 import { Text } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/common';
+import { mockTheme } from '../helpers/theme-mock';
 
 // Mock du hook useTheme
 jest.mock('@/hooks/useTheme', () => ({
-  useTheme: () => ({
-    colors: {
-      surface: '#FFFFFF',
-      border: '#E5E7EB',
-      background: '#F8F9FA',
-    },
-    spacing: {
-      xs: 4,
-      sm: 8,
-      md: 12,
-      base: 16,
-      lg: 24,
-    },
-    borderRadius: {
-      md: 8,
-      lg: 12,
-    },
-    shadows: {
-      sm: { shadowColor: '#000', shadowOpacity: 0.1 },
-      md: { shadowColor: '#000', shadowOpacity: 0.2 },
-    },
-  }),
+  useTheme: () => mockTheme,
 }));
 
 describe('Card Component', () => {
@@ -47,12 +27,12 @@ describe('Card Component', () => {
     const variants = ['elevated', 'outlined', 'filled'] as const;
 
     variants.forEach((variant) => {
-      const { getByTestID } = render(
+      const { getByTestId } = render(
         <Card variant={variant} testID={`card-${variant}`}>
           <Text>{variant}</Text>
         </Card>
       );
-      expect(() => getByTestID(`card-${variant}`)).not.toThrow();
+      expect(() => getByTestId(`card-${variant}`)).not.toThrow();
     });
   });
 

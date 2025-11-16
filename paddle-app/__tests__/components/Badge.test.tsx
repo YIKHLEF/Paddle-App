@@ -5,40 +5,11 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import { Badge, SkillBadge, SubscriptionBadge } from '@/components/common';
+import { mockTheme } from '../helpers/theme-mock';
 
 // Mock du hook useTheme
 jest.mock('@/hooks/useTheme', () => ({
-  useTheme: () => ({
-    colors: {
-      primary: '#0066FF',
-      secondary: '#00D084',
-      success: '#10B981',
-      error: '#FF3B30',
-      warning: '#FF9500',
-      info: '#3B82F6',
-      skillBeginner: '#10B981',
-      skillIntermediate: '#3B82F6',
-      skillAdvanced: '#8B5CF6',
-      skillExpert: '#F59E0B',
-      skillPro: '#EF4444',
-    },
-    spacing: {
-      xs: 4,
-      sm: 8,
-      md: 12,
-    },
-    fontSize: {
-      xs: 12,
-      sm: 14,
-      base: 16,
-    },
-    borderRadius: {
-      full: 9999,
-    },
-    fontFamily: {
-      semiBold: 'System',
-    },
-  }),
+  useTheme: () => mockTheme,
 }));
 
 describe('Badge Component', () => {

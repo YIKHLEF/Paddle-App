@@ -5,21 +5,11 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { ErrorMessage } from '@/components/common';
+import { mockTheme } from '../helpers/theme-mock';
 
 // Mock du hook useTheme
 jest.mock('@/hooks/useTheme', () => ({
-  useTheme: () => ({
-    colors: {
-      error: '#FF3B30',
-      background: '#F8F9FA',
-      text: '#2C3E50',
-      textSecondary: '#7F8C8D',
-    },
-    spacing: {
-      base: 16,
-      lg: 24,
-    },
-  }),
+  useTheme: () => mockTheme,
 }));
 
 describe('ErrorMessage Component', () => {
@@ -52,7 +42,7 @@ describe('ErrorMessage Component', () => {
   });
 
   it('renders fullscreen when fullscreen prop is true', () => {
-    const { getByTestID } = render(<ErrorMessage message="Error" fullscreen />);
-    expect(() => getByTestID('error-container')).not.toThrow();
+    const { getByTestId } = render(<ErrorMessage message="Error" fullscreen />);
+    expect(() => getByTestId('error-container')).not.toThrow();
   });
 });

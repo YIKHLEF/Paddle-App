@@ -5,30 +5,11 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { PlayerCard, type PlayerCardData } from '@/components/features';
+import { mockTheme } from '../helpers/theme-mock';
 
 // Mock du hook useTheme
 jest.mock('@/hooks/useTheme', () => ({
-  useTheme: () => ({
-    colors: {
-      primary: '#0066FF',
-      text: '#2C3E50',
-      textSecondary: '#7F8C8D',
-      surface: '#FFFFFF',
-      border: '#E5E7EB',
-      success: '#10B981',
-    },
-    spacing: {
-      sm: 8,
-      md: 12,
-      base: 16,
-    },
-    borderRadius: {
-      md: 8,
-    },
-    fontFamily: {
-      semiBold: 'System',
-    },
-  }),
+  useTheme: () => mockTheme,
 }));
 
 // Mock des composants communs

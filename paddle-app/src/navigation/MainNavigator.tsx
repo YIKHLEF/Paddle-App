@@ -4,7 +4,6 @@
 
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/hooks/useTheme';
 import type { MainTabParamList } from './types';
@@ -12,15 +11,7 @@ import { HomeScreen } from '@/screens/home';
 import { SearchScreen } from '@/screens/search';
 import { MatchesScreen } from '@/screens/matches';
 import { ProfileScreen } from '@/screens/profile';
-
-// Placeholder pour les écrans non encore implémentés
-
-const PlaceholderScreen = ({ title }: { title: string }) => (
-  <View style={styles.container}>
-    <Text style={styles.text}>{title}</Text>
-    <Text style={styles.subtitle}>À venir...</Text>
-  </View>
-);
+import { MoreScreen } from '@/screens/settings';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -94,36 +85,16 @@ const MainNavigator = () => {
 
       <Tab.Screen
         name="More"
+        component={MoreScreen}
         options={{
           tabBarLabel: 'Plus',
           tabBarIcon: ({ color, size }) => (
             <Icon name="menu" size={size} color={color} />
           ),
         }}
-      >
-        {() => <PlaceholderScreen title="Plus" />}
-      </Tab.Screen>
+      />
     </Tab.Navigator>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-  },
-  text: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2C3E50',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#7F8C8D',
-  },
-});
 
 export default MainNavigator;

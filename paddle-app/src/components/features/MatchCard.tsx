@@ -76,7 +76,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
 
   if (variant === 'compact') {
     return (
-      <Card variant="outlined" padding="medium" onPress={onPress} style={style}>
+      <Card variant="outlined" padding="medium" onPress={onPress} style={style} testID="match-card">
         <View style={styles.compactContainer}>
           <View style={styles.compactLeft}>
             <View style={styles.compactHeader}>

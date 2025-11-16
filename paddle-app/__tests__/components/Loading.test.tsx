@@ -5,19 +5,11 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import { Loading } from '@/components/common';
+import { mockTheme } from '../helpers/theme-mock';
 
 // Mock du hook useTheme
 jest.mock('@/hooks/useTheme', () => ({
-  useTheme: () => ({
-    colors: {
-      primary: '#0066FF',
-      background: '#F8F9FA',
-      text: '#2C3E50',
-    },
-    spacing: {
-      base: 16,
-    },
-  }),
+  useTheme: () => mockTheme,
 }));
 
 describe('Loading Component', () => {

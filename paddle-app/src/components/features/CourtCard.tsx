@@ -57,7 +57,7 @@ export const CourtCard: React.FC<CourtCardProps> = ({
 
   if (variant === 'compact') {
     return (
-      <Card variant="outlined" padding="medium" onPress={onPress} style={style}>
+      <Card variant="outlined" padding="medium" onPress={onPress} style={style} testID="court-card">
         <View style={styles.compactContainer}>
           <View style={styles.compactLeft}>
             <Text style={[styles.compactName, { color: theme.colors.text }]} numberOfLines={1}>

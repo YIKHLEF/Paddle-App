@@ -5,51 +5,11 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { Button } from '@/components/common';
+import { mockTheme } from '../helpers/theme-mock';
 
 // Mock du hook useTheme
 jest.mock('@/hooks/useTheme', () => ({
-  useTheme: () => ({
-    colors: {
-      primary: '#0066FF',
-      secondary: '#00D084',
-      accent: '#FF6B35',
-      error: '#FF3B30',
-      text: '#2C3E50',
-      textSecondary: '#7F8C8D',
-      background: '#F8F9FA',
-      surface: '#FFFFFF',
-      border: '#E5E7EB',
-    },
-    spacing: {
-      xs: 4,
-      sm: 8,
-      md: 12,
-      base: 16,
-      lg: 24,
-      xl: 32,
-    },
-    borderRadius: {
-      sm: 4,
-      md: 8,
-      lg: 12,
-      xl: 16,
-      full: 9999,
-    },
-    fontSize: {
-      xs: 12,
-      sm: 14,
-      base: 16,
-      md: 18,
-      lg: 20,
-      xl: 24,
-    },
-    fontFamily: {
-      regular: 'System',
-      medium: 'System',
-      semiBold: 'System',
-      bold: 'System',
-    },
-  }),
+  useTheme: () => mockTheme,
 }));
 
 describe('Button Component', () => {

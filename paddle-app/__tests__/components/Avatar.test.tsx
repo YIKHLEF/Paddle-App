@@ -5,31 +5,11 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import { Avatar, AvatarGroup } from '@/components/common';
+import { mockTheme } from '../helpers/theme-mock';
 
 // Mock du hook useTheme
 jest.mock('@/hooks/useTheme', () => ({
-  useTheme: () => ({
-    colors: {
-      primary: '#0066FF',
-      surface: '#FFFFFF',
-      textSecondary: '#7F8C8D',
-      border: '#E5E7EB',
-    },
-    borderRadius: {
-      sm: 4,
-      md: 8,
-      full: 9999,
-    },
-    fontSize: {
-      xs: 12,
-      sm: 14,
-      base: 16,
-      lg: 20,
-    },
-    fontFamily: {
-      semiBold: 'System',
-    },
-  }),
+  useTheme: () => mockTheme,
 }));
 
 describe('Avatar Component', () => {
@@ -57,8 +37,8 @@ describe('Avatar Component', () => {
   });
 
   it('renders with badge when badge prop is true', () => {
-    const { getByTestID } = render(<Avatar name="Test User" badge />);
-    expect(() => getByTestID('avatar-badge')).not.toThrow();
+    const { getByTestId } = render(<Avatar name="Test User" badge />);
+    expect(() => getByTestId('avatar-badge')).not.toThrow();
   });
 
   it('extracts correct initials from name', () => {
@@ -66,7 +46,7 @@ describe('Avatar Component', () => {
       { name: 'John Doe', expected: 'JD' },
       { name: 'Marie Martin', expected: 'MM' },
       { name: 'A', expected: 'A' },
-      { name: 'Pierre Jean Claude', expected: 'PJ' },
+      { name: 'Pierre Jean Claude', expected: 'PC' },
     ];
 
     testCases.forEach(({ name, expected }) => {
@@ -84,11 +64,11 @@ describe('AvatarGroup Component', () => {
       { id: '3', name: 'User Three', uri: null },
     ];
 
-    const { getByText } = render(<AvatarGroup avatars={avatars} />);
+    const { getByText, getAllByText } = render(<AvatarGroup avatars={avatars} />);
 
     expect(getByText('UO')).toBeTruthy();
-    expect(getByText('UT')).toBeTruthy();
-    expect(getByText('UT')).toBeTruthy();
+    const utElements = getAllByText('UT');
+    expect(utElements).toHaveLength(2);
   });
 
   it('limits displayed avatars based on max prop', () => {

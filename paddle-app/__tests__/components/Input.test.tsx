@@ -5,37 +5,11 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { Input } from '@/components/common';
+import { mockTheme } from '../helpers/theme-mock';
 
 // Mock du hook useTheme
 jest.mock('@/hooks/useTheme', () => ({
-  useTheme: () => ({
-    colors: {
-      primary: '#0066FF',
-      text: '#2C3E50',
-      textSecondary: '#7F8C8D',
-      background: '#F8F9FA',
-      surface: '#FFFFFF',
-      border: '#E5E7EB',
-      error: '#FF3B30',
-    },
-    spacing: {
-      xs: 4,
-      sm: 8,
-      md: 12,
-      base: 16,
-    },
-    borderRadius: {
-      md: 8,
-    },
-    fontSize: {
-      sm: 14,
-      base: 16,
-    },
-    fontFamily: {
-      regular: 'System',
-      medium: 'System',
-    },
-  }),
+  useTheme: () => mockTheme,
 }));
 
 describe('Input Component', () => {

@@ -43,7 +43,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
 
   if (variant === 'compact') {
     return (
-      <Card variant="outlined" padding="medium" onPress={onPress} style={style}>
+      <Card variant="outlined" padding="medium" onPress={onPress} style={style} testID="player-card">
         <View style={styles.compactContainer}>
           <Avatar
             uri={player.profilePicture}
