@@ -7,12 +7,12 @@ This document provides comprehensive guidance for AI assistants working on the P
 **Project Name:** Paddle-App
 **Purpose:** Mobile application for paddle/padel players - Find partners, book courts, track performance
 **Type:** React Native Mobile App (iOS/Android) + Node.js Backend API
-**Status:** ✅ Development - Sprint 2 in progress (Geolocation & Maps Complete!)
-**Version:** 1.5.0
+**Status:** ✅ Development - Sprint 2 in progress (Booking System Complete!)
+**Version:** 1.7.0
 **Tech Stack:** React Native 0.74, TypeScript, Node.js 20, PostgreSQL, Prisma, Redux Toolkit, Stripe, Firebase, Socket.io
 **Business Model:** Freemium with subscriptions (Standard: 9.99€/month, Premium: 14.99€/month)
 
-## 🆕 Recent Updates (v1.5.0 - Sprint 2: Geolocation & Maps!)
+## 🆕 Recent Updates (v1.7.0 - Sprint 2: Complete Booking System!)
 
 ### ✅ New Features Implemented:
 
@@ -93,15 +93,15 @@ This document provides comprehensive guidance for AI assistants working on the P
 - ✅ User location tracking and updates
 - ✅ Geographic statistics and insights
 
-**Progress:** Sprint 1 Complete + Sprint 2 (2/5 completed)
+**Progress:** Sprint 1 Complete + Sprint 2 (4/5 completed)
 - ✅ **Sprint 1:** All 6 features complete (100%)
 - ✅ **Sprint 2:** Real-time Chat (100%)
 - ✅ **Sprint 2:** Geolocation & Maps (100%)
-- ⏳ Complete Match Management (0%)
-- ⏳ Complete Booking System (0%)
-- ⏳ Tournament System (0%)
+- ✅ **Sprint 2:** Complete Match Management (100%)
+- ✅ **Sprint 2:** Complete Booking System (100%)
+- ⏳ **Sprint 2:** Tournament System (0%)
 
-**Completion:** ~65-70% of MVP completed (Location-based discovery operational!)
+**Completion:** ~80-85% of MVP completed (Booking and match systems operational!)
 
 ## Project Structure
 
@@ -3276,7 +3276,463 @@ function NearbyMatchesScreen() {
 
 ---
 
+### Complete Booking System Module
+
+**Backend Service (`paddle-api/src/services/booking.service.ts`):**
+Comprehensive court booking management with availability checking, payment integration, and statistics:
+
+**Features:**
+- Full booking lifecycle (create, update, confirm, cancel, complete)
+- Real-time availability checking with conflict detection
+- Automatic price calculation based on court hourly rates
+- Time slot generation (90-minute intervals)
+- Payment integration (Stripe ready)
+- Cancellation policy enforcement (24-hour rule)
+- Automatic refund handling
+- Booking expiration cleanup (30-minute timeout)
+- Auto-completion of past bookings
+- User booking statistics and analytics
+
+**Core Methods:**
+
+**Booking CRUD:**
+- `createBooking(data)` - Create new booking with availability check
+- `getBookingById(bookingId, userId?)` - Get booking details with authorization
+- `searchBookings(filters)` - Advanced search with filters and pagination
+- `getUserBookings(userId, filters?)` - Get user's bookings with status filtering
+- `updateBooking(bookingId, userId, data)` - Modify booking with availability recheck
+- `confirmBooking(bookingId)` - Confirm booking after payment
+- `cancelBooking(bookingId, userId, reason?)` - Cancel with refund policy check
+- `completeBooking(bookingId)` - Mark booking as completed
+
+**Availability Management:**
+- `checkAvailability(courtId, startTime, endTime, excludeBookingId?)` - Check slot availability
+- `getCourtDayAvailability(courtId, date)` - Get all time slots for a day
+- Time slot generation with 90-minute intervals
+- Conflict detection algorithm (checks overlapping bookings)
+- Club opening hours integration
+
+**Analytics & Utilities:**
+- `getUserBookingStatistics(userId)` - Comprehensive user statistics
+- `calculatePrice(pricePerHour, durationMinutes)` - Automatic pricing
+- `cleanupExpiredBookings()` - Remove PENDING bookings after 30 minutes
+- `autoCompleteBookings()` - Mark past bookings as COMPLETED
+
+**Booking Filters:**
+```typescript
+{
+  userId?: string,
+  courtId?: string,
+  clubId?: string,
+  status?: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED',
+  startDate?: Date,
+  endDate?: Date,
+  page?: number,
+  limit?: number,
+}
+```
+
+**Availability System:**
+- **Time Slots:** 90-minute intervals (configurable)
+- **Opening Hours:** Extracted from club.openingHours JSON
+- **Conflict Detection:** 4 overlap scenarios checked:
+  1. New booking starts during existing booking
+  2. New booking ends during existing booking
+  3. New booking completely contains existing booking
+  4. New booking is completely inside existing booking
+
+**Cancellation Policy:**
+- **24+ hours before:** Full refund eligible
+- **Less than 24 hours:** No refund
+- **Status validation:** Cannot cancel CANCELLED or COMPLETED bookings
+- **Automatic cleanup:** PENDING bookings auto-cancelled after 30 minutes
+
+**Statistics Tracking:**
+Per user statistics include:
+- Total bookings count
+- Upcoming bookings (PENDING/CONFIRMED in future)
+- Completed bookings count
+- Cancelled bookings count
+- Total amount spent (paid bookings only)
+- Favorite club (most bookings)
+- Bookings by month (last 6 months with spend)
+
+**Routes (`paddle-api/src/routes/booking.routes.ts`):**
+
+13 REST API endpoints for complete booking management:
+
+```typescript
+POST   /api/bookings                       // Create booking (Private)
+GET    /api/bookings                       // Search bookings (Private, admin)
+GET    /api/bookings/user/me               // Get my bookings (Private)
+GET    /api/bookings/user/upcoming         // Get upcoming bookings (Private)
+GET    /api/bookings/user/statistics       // Get my statistics (Private)
+GET    /api/bookings/:id                   // Get booking details (Private)
+PUT    /api/bookings/:id                   // Update booking (Private)
+POST   /api/bookings/:id/cancel            // Cancel booking (Private)
+DELETE /api/bookings/:id                   // Delete/Cancel booking (Private)
+POST   /api/bookings/:id/confirm           // Confirm booking (Private)
+GET    /api/courts/:courtId/availability   // Get day availability (Public)
+GET    /api/courts/:courtId/availability/week // Get week availability (Public)
+POST   /api/bookings/check-availability    // Check specific slot (Public)
+POST   /api/bookings/cleanup               // Cleanup expired (Cron/Admin)
+```
+
+**Request/Response Examples:**
+
+**Create Booking:**
+```typescript
+POST /api/bookings
+{
+  courtId: 'court-123',
+  startTime: '2025-11-18T14:00:00Z',
+  endTime: '2025-11-18T15:30:00Z',
+  duration: 90,
+  paymentMethod: 'CARD',
+  notes: 'Singles practice'
+}
+```
+
+**Check Availability:**
+```typescript
+GET /api/courts/:courtId/availability?date=2025-11-18
+
+Response: {
+  success: true,
+  availability: {
+    date: '2025-11-18',
+    courtId: 'court-123',
+    court: {
+      id: 'court-123',
+      name: 'Court Central',
+      type: 'INDOOR',
+      pricePerHour: 25
+    },
+    slots: [
+      {
+        startTime: '2025-11-18T08:00:00Z',
+        endTime: '2025-11-18T09:30:00Z',
+        available: true,
+        price: 37.50,
+        bookingId: null
+      },
+      {
+        startTime: '2025-11-18T09:30:00Z',
+        endTime: '2025-11-18T11:00:00Z',
+        available: false,
+        price: 37.50,
+        bookingId: 'booking-456'
+      },
+      // ... more slots
+    ],
+    openingHour: 8,
+    closingHour: 22
+  }
+}
+```
+
+**Get Statistics:**
+```typescript
+GET /api/bookings/user/statistics
+
+Response: {
+  success: true,
+  statistics: {
+    totalBookings: 45,
+    upcomingBookings: 3,
+    completedBookings: 38,
+    cancelledBookings: 4,
+    totalSpent: 1125.50,
+    favoriteClub: {
+      id: 'club-789',
+      name: 'Padel Center Paris',
+      bookingCount: 28
+    },
+    bookingsByMonth: [
+      { month: 'novembre 2025', count: 8, spent: 200 },
+      { month: 'octobre 2025', count: 12, spent: 300 },
+      // ... last 6 months
+    ]
+  }
+}
+```
+
+**Frontend Hook (`paddle-app/src/hooks/useBooking.ts`):**
+React hook for comprehensive booking management:
+
+**State:**
+- `bookings` - Current booking list
+- `currentBooking` - Selected booking details
+- `statistics` - User booking statistics
+- `pagination` - Pagination info
+- `loading` - Data loading state
+- `actionLoading` - Action in progress state
+- `error` - Error message
+
+**Methods:**
+
+**Booking Operations:**
+- `createBooking(data)` - Create new booking with validation
+- `loadBookingById(bookingId)` - Load specific booking
+- `updateBooking(bookingId, data)` - Modify booking
+- `cancelBooking(bookingId)` - Cancel booking
+
+**Data Loading:**
+- `loadMyBookings(filters?)` - Load user bookings with filters
+- `loadUpcomingBookings(page?, limit?)` - Load future bookings
+- `loadStatistics()` - Load user statistics
+- `checkAvailability(courtId, date)` - Check court availability
+- `loadMore(filters?)` - Load next page
+
+**Utilities:**
+- `refresh(filters?)` - Refresh booking list
+- `reset()` - Reset all state
+
+**Helpers:**
+- `hasMore` - Boolean, more pages available
+- `isEmpty` - Boolean, no bookings
+- `upcomingCount` - Number of upcoming bookings
+
+**Usage Example:**
+
+```typescript
+import { useBooking } from '@/hooks/useBooking';
+
+function BookingScreen() {
+  const {
+    bookings,
+    loading,
+    error,
+    createBooking,
+    loadUpcomingBookings,
+    cancelBooking,
+    checkAvailability,
+    upcomingCount,
+  } = useBooking(true); // Auto-load on mount
+
+  useEffect(() => {
+    loadUpcomingBookings();
+  }, []);
+
+  const handleCreateBooking = async () => {
+    const booking = await createBooking({
+      courtId: 'court-123',
+      date: '2025-11-18',
+      startTime: '14:00',
+      endTime: '15:30',
+      paymentMethod: 'CARD',
+    });
+
+    if (booking) {
+      Alert.alert('Success', 'Booking created!');
+      navigation.navigate('BookingDetails', { bookingId: booking.id });
+    }
+  };
+
+  const handleCheckAvailability = async () => {
+    const availability = await checkAvailability('court-123', '2025-11-18');
+
+    if (availability) {
+      const availableSlots = availability.slots.filter(s => s.available);
+      console.log(`${availableSlots.length} slots available`);
+    }
+  };
+
+  const handleCancel = async (bookingId: string) => {
+    Alert.alert(
+      'Confirm Cancellation',
+      'Are you sure you want to cancel this booking?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes',
+          onPress: async () => {
+            const success = await cancelBooking(bookingId);
+            if (success) {
+              Alert.alert('Cancelled', 'Booking cancelled successfully');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  return (
+    <View>
+      <Text>You have {upcomingCount} upcoming bookings</Text>
+
+      <FlatList
+        data={bookings}
+        renderItem={({ item }) => (
+          <BookingCard
+            booking={item}
+            onPress={() => navigation.navigate('BookingDetails', { bookingId: item.id })}
+            onCancel={() => handleCancel(item.id)}
+          />
+        )}
+      />
+    </View>
+  );
+}
+```
+
+**Availability Display Example:**
+
+```typescript
+import { useBooking } from '@/hooks/useBooking';
+import { useState } from 'react';
+
+function CourtAvailabilityScreen({ route }) {
+  const { courtId } = route.params;
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [availability, setAvailability] = useState(null);
+  const { checkAvailability, loading } = useBooking();
+
+  useEffect(() => {
+    loadAvailability();
+  }, [selectedDate]);
+
+  const loadAvailability = async () => {
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    const result = await checkAvailability(courtId, dateStr);
+    setAvailability(result);
+  };
+
+  const handleSlotPress = async (slot) => {
+    if (!slot.available) return;
+
+    navigation.navigate('CreateBooking', {
+      courtId,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      price: slot.price,
+    });
+  };
+
+  return (
+    <View>
+      <DatePicker value={selectedDate} onChange={setSelectedDate} />
+
+      {loading ? (
+        <Loading />
+      ) : (
+        <FlatList
+          data={availability?.slots || []}
+          renderItem={({ item: slot }) => (
+            <TimeSlotCard
+              slot={slot}
+              onPress={() => handleSlotPress(slot)}
+              disabled={!slot.available}
+            />
+          )}
+        />
+      )}
+    </View>
+  );
+}
+```
+
+**Integration with Notifications:**
+
+The booking service automatically sends notifications:
+- **Booking confirmed:** `sendBookingConfirmationNotification(userId, clubName, dateTime, bookingId)`
+- **Booking cancelled:** `sendBookingCancellationNotification(userId, clubName, dateTime)`
+
+These integrate with the Firebase Push Notifications module for real-time updates.
+
+**Key Features:**
+
+1. **Complete Booking Lifecycle:**
+   - Creation with real-time availability check
+   - Modification with re-validation
+   - Cancellation with refund policy
+   - Automatic completion for past bookings
+   - Expiration cleanup for unpaid bookings
+
+2. **Smart Availability:**
+   - Time slot generation based on court schedule
+   - Conflict detection across all bookings
+   - Club opening hours integration
+   - 90-minute default slot duration
+   - Visual availability calendar support
+
+3. **Payment Integration:**
+   - Stripe payment intent support (ready)
+   - Multiple payment methods (CARD, CASH, ON_SITE, SUBSCRIPTION)
+   - Automatic refund handling
+   - Payment status tracking
+
+4. **Analytics & Insights:**
+   - Total bookings and spending
+   - Favorite club identification
+   - Monthly booking trends
+   - Upcoming vs completed tracking
+   - Cancellation rate monitoring
+
+5. **Security & Validation:**
+   - User authorization checks
+   - Status-based permissions
+   - Input validation (dates, times, durations)
+   - Price calculation verification
+   - Court availability re-checks
+
+**Best Practices:**
+
+1. Always check availability before showing booking UI
+2. Display clear pricing before user confirms
+3. Show cancellation policy and deadline
+4. Provide visual calendar for availability
+5. Cache availability data (1-5 minute TTL)
+6. Implement optimistic UI updates
+7. Handle payment failures gracefully
+8. Show remaining time for PENDING bookings
+9. Confirm cancellations with users
+10. Display booking history with filters
+
+**Cron Jobs:**
+
+For production deployment, schedule these tasks:
+
+```bash
+# Every 5 minutes - cleanup expired PENDING bookings
+*/5 * * * * curl -X POST https://api.paddle-app.com/api/bookings/cleanup
+
+# Every hour - auto-complete past bookings
+0 * * * * curl -X POST https://api.paddle-app.com/api/bookings/cleanup
+```
+
+This ensures:
+- Abandoned bookings (unpaid) don't block slots
+- Past bookings are marked as completed
+- Statistics remain accurate
+
+---
+
 ## Version History
+
+- **v1.7.0** (2025-11-16): Sprint 2 - Complete Booking System! 📅
+  - ✅ **Complete Booking System:** Full court reservation management with payment integration
+    - Backend booking service with comprehensive lifecycle management
+    - 13 REST API endpoints for booking operations
+    - Real-time availability checking with conflict detection
+    - Time slot generation (90-minute intervals with club hours)
+    - Automatic price calculation based on court hourly rates
+    - Cancellation policy enforcement (24-hour refund rule)
+    - Payment integration (Stripe ready, multi-method support)
+    - Booking expiration cleanup (30-minute timeout for PENDING)
+    - Auto-completion of past bookings
+    - User booking statistics and analytics
+    - Favorite club identification
+    - Monthly booking trends (last 6 months)
+    - Availability calendar (day and week views)
+    - Conflict detection algorithm (4 overlap scenarios)
+    - useBooking hook for React integration
+  - **Availability System:** Automatic time slot generation, opening hours integration, visual calendar support
+  - **Payment Features:** Multiple payment methods (CARD, CASH, ON_SITE, SUBSCRIPTION), automatic refunds
+  - **Statistics:** Total/upcoming/completed/cancelled bookings, total spent, favorite club, monthly trends
+  - **New Files Added:** 3 files (booking.service.ts, booking.routes.ts, useBooking.ts)
+  - **Sprint 2 Progress:** 4/5 features complete (80%)
+  - **Completion:** ~80-85% of MVP (booking system operational!)
 
 - **v1.6.0** (2025-11-16): Sprint 2 - Match Management Complete! 🎾
   - ✅ **Complete Match Management System:** Full match lifecycle with intelligent recommendations
